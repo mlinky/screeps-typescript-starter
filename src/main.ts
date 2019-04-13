@@ -1,14 +1,42 @@
+'use strict';
+
 import { ErrorMapper } from "utils/ErrorMapper";
+import { roomManager } from "managers/roomManager";
+import { creepManager } from "managers/creepManager";
+import { memoryManager } from "managers/memoryManager";
+import { USE_PROFILER } from './settings';
+import profiler from './profiler/screeps-profiler';
+import { GameState } from 'state/state'
+import { clusterManager } from "managers/clusterManager";
 
-// When compiling TS to JS and bundling with rollup, the line numbers and file names in error messages change
-// This utility uses source maps to get the line numbers and file names of the original, TS source code
+// global state
+let gameState: GameState = new GameState();
+
+function main(): void {
+
+  memoryManager.run();
+
+  clusterManager.run(gameState);
+
+  roomManager.run();
+
+  creepManager.run();
+
+};
+
 export const loop = ErrorMapper.wrapLoop(() => {
-  console.log(`Current game tick is ${Game.time}`);
-
-  // Automatically delete memory of missing creeps
-  for (const name in Memory.creeps) {
-    if (!(name in Game.creeps)) {
-      delete Memory.creeps[name];
-    }
-  }
+  profiler.wrap(main);
 });
+
+// This gets run on each global reset
+function onGlobalReset(): void {
+  if (USE_PROFILER) profiler.enable();
+
+  // Is this necessary?
+  gameState.refresh();
+
+}
+
+// Run the global reset code
+onGlobalReset();
+
