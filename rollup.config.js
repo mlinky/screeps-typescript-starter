@@ -19,14 +19,18 @@ export default {
   output: {
     file: "dist/main.js",
     format: "cjs",
-    sourcemap: true
+    sourcemap: false
   },
 
   plugins: [
     clear({ targets: ["dist"] }),
     resolve(),
-    commonjs(),
-    typescript({tsconfig: "./tsconfig.json"}),
-    screeps({config: cfg, dryRun: cfg == null})
+    commonjs({
+      namedExports: {
+        'screeps-profiler': ['profiler']
+      }
+    }),
+    typescript({ tsconfig: "./tsconfig.json" }),
+    screeps({ config: cfg, dryRun: cfg == null })
   ]
 }
