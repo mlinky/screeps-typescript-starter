@@ -7,7 +7,6 @@ import { memoryManager } from "managers/memoryManager";
 import { USE_PROFILER } from './settings';
 import profiler from './profiler/screeps-profiler';
 import { GameState } from 'state/state'
-import { clusterManager } from "managers/clusterManager";
 
 // global state
 let gameState: GameState = new GameState();
@@ -16,7 +15,7 @@ function main(): void {
 
   memoryManager.run();
 
-  clusterManager.run(gameState);
+  gameState.run();
 
   roomManager.run();
 
@@ -33,7 +32,7 @@ function onGlobalReset(): void {
   if (USE_PROFILER) profiler.enable();
 
   // Is this necessary?
-  gameState.refresh();
+  gameState.initState();
 
 }
 

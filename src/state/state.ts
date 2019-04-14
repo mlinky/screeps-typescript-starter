@@ -2,76 +2,121 @@ import { log } from "log/log";
 import { MyCreep } from "./creep";
 import { MyCluster } from "./cluster";
 import { roomManager } from "managers/roomManager";
+import { Perfmon } from "utils/perfmon";
+import { profile } from "profiler/decorator";
 
 // State.ts - core gamestate to store on the heap
-const _DEBUG_GAMESTATE: boolean = true;
+const _DEBUG_GAMESTATE: boolean = false;
 
+@profile
 export class GameState {
-    initialised: boolean;
     creeps: { [creepName: string]: MyCreep };
     clusters: { [clusterHub: string]: MyCluster };
+    perfmon: Perfmon;
+
+    initialised: boolean;
 
     constructor() {
         this.creeps = {};
         this.clusters = {};
         this.initialised = false;
+        this.perfmon = new Perfmon();
     }
 
-    refresh(): void {
+    initState(): void {
 
-        refreshCreeps(this.creeps);
+        if (_DEBUG_GAMESTATE) {
+            // Start a performance timer
+            this.perfmon.start();
+        }
 
-        refreshClusters(this.clusters);
+        this.initCreeps();
 
-        // Log that a refresh has happened
-        log.debug('Gamestate refresh completed', _DEBUG_GAMESTATE);
+        this.initClusters();
+
+        if (_DEBUG_GAMESTATE) {
+            // Stop the timer
+            this.perfmon.stop();
+
+            // Log that a refresh has happened
+            log.debug(`Gamestate refresh completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
+        }
 
         this.initialised = true;
-    }
-}
 
-function refreshCreeps(creeps: { [creepName: string]: MyCreep }) {
-
-    creeps = {};
-
-    for (const c of Object.values(Game.creeps)) {
-        creeps[c.name] = new MyCreep(c.name);
     }
 
-}
+    initCreeps() {
 
-function refreshClusters(clusters: { [clusterHub: string]: MyCluster }) {
-
-    let pass2Rooms: Room[] = [];
-    clusters = {};
-
-    for (const r of Object.values(Game.rooms)) {
-
-        // In case room is undefined
-        if (r == undefined) {
-            continue;
+        if (_DEBUG_GAMESTATE) {
+            // Start a performance timer
+            this.perfmon.start();
         }
 
-        // Collect rooms with spawns first
-        if (r.hasSpawns()) {
-            clusters[r.name] = new MyCluster(r.name);
-        } else {
-            // Store 'other' rooms for a second pass - below
-            pass2Rooms.push(r);
+        this.creeps = {};
+
+        for (const c of Object.values(Game.creeps)) {
+            this.creeps[c.name] = new MyCreep(c.name);
+        }
+
+        if (_DEBUG_GAMESTATE) {
+            // Stop the timer
+            this.perfmon.stop();
+
+            // Log that a refresh has happened
+            log.debug(`Creep initialise completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
         }
     }
 
-    // TODO - handle pss2Rooms
-    if (pass2Rooms.length > 0) {
-        log.error('pass2Rooms not implemented yet');
+    initClusters() {
+
+        if (_DEBUG_GAMESTATE) {
+            // Start a performance timer
+            this.perfmon.start();
+        }
+
+        let pass2Rooms: Room[] = [];
+        this.clusters = {};
+
+        for (const r of Object.values(Game.rooms)) {
+
+            // In case room is undefined
+            if (r == undefined) {
+                continue;
+            }
+
+            // Collect rooms with spawns first
+            if (r.hasSpawns()) {
+                this.clusters[r.name] = new MyCluster(r.name);
+            } else {
+                // Store 'other' rooms for a second pass - below
+                pass2Rooms.push(r);
+            }
+        }
+
+        // TODO - handle pss2Rooms
+        if (pass2Rooms.length > 0) {
+            log.error('pass2Rooms not implemented yet');
+        }
+
+        // Update each cluster state
+        for (const c of Object.values(this.clusters)) {
+
+            c.initCluster();
+
+        }
+
+        if (_DEBUG_GAMESTATE) {
+            // Stop the timer
+            this.perfmon.stop();
+
+            // Log that a refresh has happened
+            log.debug(`Cluster initialise completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
+        }
     }
 
-    // Update each cluster state
-    for (const c of Object.values(clusters)) {
-
-        c.initState();
+    run() {
 
     }
-
-
 }
+

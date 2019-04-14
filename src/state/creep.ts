@@ -1,8 +1,11 @@
-export class MyCreep {
-    creepID: string;
+import { profile } from "profiler/decorator";
 
-    constructor(creepID: string) {
-        this.creepID = creepID;
+@profile
+export class MyCreep {
+    name: string;
+
+    constructor(name: string) {
+        this.name = name;
     }
 
 }
