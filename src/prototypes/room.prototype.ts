@@ -351,7 +351,7 @@ class CreepRequest {
                 } else {
                     return [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
                 }
-            case 'builder':
+            case 'worker':
             case 'upgrader':
             default:
                 return [WORK, WORK, CARRY, MOVE];

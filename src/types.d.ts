@@ -1,3 +1,5 @@
+import { GameState } from "state/state";
+
 // memory extension samples
 interface CreepMemory {
   role: string;
@@ -16,7 +18,6 @@ interface Memory {
 // `global` extension samples
 declare namespace NodeJS {
   interface Global {
-    //    Profiler: Profiler;
     log: any;
   }
 }

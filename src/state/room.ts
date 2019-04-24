@@ -6,30 +6,34 @@ import { MyRoad } from "./road";
 import { MyWall } from "./wall";
 import { MyRampart } from "./ramparts";
 import { profile } from "profiler/decorator";
+import { MyHostileCreep } from "./hostilerCreep";
 
 @profile
 export class MyRoom {
+    room: Room;
     roomName: string;
+    clusterName: string;
     clusterHub: boolean;
     controller?: MyController;
-    sources: { [sourceID: string]: MySource };
-    containers: { [sourceID: string]: MyContainer };
-    constructionSites: { [sourceID: string]: MyContructionSite };
-    roads: { [sourceID: string]: MyRoad };
-    walls: { [sourceID: string]: MyWall };
-    ramparts: { [sourceID: string]: MyRampart };
+    sources: { [sourceID: string]: MySource } = {};
+    containers: { [sourceID: string]: MyContainer } = {};
+    constructionSites: { [sourceID: string]: MyContructionSite } = {};
+    roads: { [sourceID: string]: MyRoad } = {};
+    walls: { [sourceID: string]: MyWall } = {};
+    ramparts: { [sourceID: string]: MyRampart } = {};
+
+    hostiles: { [creepID: string]: MyHostileCreep } = {};
+
+    terrain: RoomTerrain;
 
     initialised: boolean;
 
-    constructor(roomName: string, clusterHub: boolean = false) {
-        this.roomName = roomName;
+    constructor(room: Room, clusterName: string, clusterHub: boolean = false) {
+        this.room = room;
+        this.clusterName = clusterName;
+        this.roomName = room.name;
         this.clusterHub = clusterHub;
-        this.sources = {};
-        this.containers = {};
-        this.constructionSites = {};
-        this.roads = {};
-        this.walls = {};
-        this.ramparts = {};
+        this.terrain = Game.map.getRoomTerrain(room.name);
 
         this.initialised = false;
     }
@@ -43,99 +47,116 @@ export class MyRoom {
         //   gather road information
         //   gather wall information
         //   gather ramparts information
+        let room: MyRoom = this;
 
-        this.initController();
-        this.initSources();
-        this.initContainers();
-        this.initConstructionSites();
-        this.initRoads();
-        this.initWalls();
-        this.initRamparts();
+        initController();
+        initSources();
+        initContainers();
+        initConstructionSites();
+        initRoads();
+        initWalls();
+        initRamparts();
 
         this.initialised = true;
-    }
 
-    private initController(): void {
-        // set controller ID
-        let controller: StructureController | undefined = Game.rooms[this.roomName].controller;
+        return;
 
-        if (controller) {
-            this.controller = new MyController(controller.id);
-        }
-    }
+        function initController(): void {
+            // set controller ID
+            let controller: StructureController | undefined = Game.rooms[room.roomName].controller;
 
-    private initSources(): void {
-
-        const sources = Game.rooms[this.roomName].find(FIND_SOURCES);
-
-        if (sources && sources.length > 0) {
-            for (let o of sources) {
-                this.sources[o.id] = new MySource(o.id);
+            if (controller) {
+                room.controller = new MyController(controller.id);
             }
         }
-    }
 
-    private initContainers(): void {
+        function initSources(): void {
 
-        const structures = Game.rooms[this.roomName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_CONTAINER }
-        });
+            const sources = Game.rooms[room.roomName].find(FIND_SOURCES);
 
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.containers[o.id] = new MyContainer(o.id);
+            if (sources && sources.length > 0) {
+                for (let o of sources) {
+                    room.sources[o.id] = new MySource(o);
+                }
             }
         }
-    }
 
-    private initConstructionSites(): void {
+        function initContainers(): void {
 
-        const sites = Game.rooms[this.roomName].find(FIND_MY_CONSTRUCTION_SITES);
+            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_CONTAINER }
+            });
 
-        if (sites && sites.length > 0) {
-            for (let o of sites) {
-                this.constructionSites[o.id] = new MyContructionSite(o.id);
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    room.containers[o.id] = new MyContainer(o.id);
+                }
             }
         }
-    }
 
-    private initRoads(): void {
+        function initConstructionSites(): void {
 
-        const structures = Game.rooms[this.roomName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_ROAD }
-        });
+            const sites = Game.rooms[room.roomName].find(FIND_MY_CONSTRUCTION_SITES);
 
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.roads[o.id] = new MyRoad(o.id);
+            if (sites && sites.length > 0) {
+                for (let o of sites) {
+                    room.constructionSites[o.id] = new MyContructionSite(o.id);
+                }
             }
         }
-    }
 
-    private initWalls(): void {
+        function initRoads(): void {
 
-        const structures = Game.rooms[this.roomName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_WALL }
-        });
+            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_ROAD }
+            });
 
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.walls[o.id] = new MyWall(o.id);
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    room.roads[o.id] = new MyRoad(o.id);
+                }
             }
         }
-    }
 
-    private initRamparts(): void {
+        function initWalls(): void {
 
-        const structures = Game.rooms[this.roomName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_RAMPART }
-        });
+            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_WALL }
+            });
 
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.ramparts[o.id] = new MyRampart(o.id);
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    room.walls[o.id] = new MyWall(o.id);
+                }
             }
         }
+
+        function initRamparts(): void {
+
+            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_RAMPART }
+            });
+
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    room.ramparts[o.id] = new MyRampart(o.id);
+                }
+            }
+        }
+
     }
 
+    public run(): void {
+        this.updateHostiles();
+
+    }
+
+    private updateHostiles(): void {
+        const targets = Game.rooms[this.roomName].find(FIND_HOSTILE_CREEPS);
+
+        // Store current hostile creeps
+        for (let t of targets) {
+            this.hostiles[t.id] = new MyHostileCreep(t);
+        }
+    }
 }

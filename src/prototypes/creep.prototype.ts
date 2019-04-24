@@ -1,4 +1,5 @@
 import { profile } from '../profiler/decorator';
+import { log } from 'log/log';
 
 export { }
 

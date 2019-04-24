@@ -6,155 +6,409 @@ import { MyTower } from "./tower";
 import { MyLab } from "./lab";
 import { MyLink } from "./link";
 import { profile } from "profiler/decorator";
+import { CreepRequest, RequestPriority } from "creeps/creepRequest";
+import { log } from "log/log";
+import { gameState } from "defs";
+
+const Roles = ['miner', 'hauler', 'worker', 'upgrader']
+
+const _REFRESH = {
+    miner: 100,
+    upgrader: 100,
+    worker: 100,
+    hauler: 100
+};
 
 @profile
 export class MyCluster {
     clusterName: string;
-    rooms: { [roomName: string]: MyRoom };
 
-    spawns: { [spawnID: string]: MySpawn };
-    extensions: { [extensionID: string]: MyExtension };
-    towers: { [towerID: string]: MyTower };
-    labs: { [labID: string]: MyLab };
-    links: { [linkID: string]: MyLink };
+    spawns: { [spawnID: string]: MySpawn } = {};
+    extensions: { [extensionID: string]: MyExtension } = {};
+    towers: { [towerID: string]: MyTower } = {};
+    labs: { [labID: string]: MyLab } = {};
+    links: { [linkID: string]: MyLink } = {};
 
-    initialised: boolean;
+    creepRequests: CreepRequest[] = [];
 
-    constructor(roomName: string) {
+    hasSpawns: boolean = false;
+    canSpawn: boolean = false;
+    _creepsRequired: { [role: string]: number } = {}
+    creepsAvailable: { [role: string]: number } = {}
+    creepsRequested: { [role: string]: number } = {}
+
+    initialised: boolean = false;
+    firstTick: boolean = true;
+
+    constructor(room: Room) {
         // Init cluster state
-        this.clusterName = roomName;
-        this.rooms = {};
-        this.spawns = {};
-        this.extensions = {};
-        this.towers = {};
-        this.labs = {};
-        this.links = {};
+        this.clusterName = room.name;
 
-        // Add the cluster hub
-        this.rooms[roomName] = new MyRoom(roomName, true);
+        this.initCounts();
 
-        this.initialised = false;
+        // Add the cluster hub room
+        gameState.rooms[room.name] = new MyRoom(room, this.clusterName, true);
 
     };
 
+    //#region Public
+
     // Initialise cluster state
     public initCluster(): void {
+        let cluster: MyCluster = this;
 
-        this.initSpawns();
-        this.initExtensions();
-        this.initTowers();
-        this.initLabs();
-        this.initLinks();
+        // Init room objects
+        this.initCounts();
+        initSpawns();
+        initExtensions();
+        initTowers();
+        initLabs();
+        initLinks();
 
-        for (let r in this.rooms) {
-            this.rooms[r].initRoom()
+        // Get a list of rooms for this cluster
+        let roomList = _.filter(gameState.rooms, (room) => room.clusterName = this.clusterName);
+
+        // Init rooms for the cluster
+        for (let r of roomList) {
+            gameState.rooms[r.roomName].initRoom()
         }
 
         this.initialised = true;
 
+        return;
+
+        function initSpawns(): void {
+
+            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_SPAWN }
+            });
+
+            if (structures && structures.length > 0) {
+                cluster.hasSpawns = true;
+                for (let o of structures) {
+                    cluster.spawns[o.id] = new MySpawn(o.id);
+                }
+
+            }
+
+        }
+
+        function initExtensions(): void {
+
+            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_EXTENSION }
+            });
+
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    cluster.extensions[o.id] = new MyExtension(o.id);
+                }
+
+            }
+
+        }
+
+        function initTowers(): void {
+
+            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_TOWER }
+            });
+
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    cluster.towers[o.id] = new MyTower(o.id);
+                }
+
+            }
+
+        }
+
+        function initLabs(): void {
+
+            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_LAB }
+            });
+
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    cluster.labs[o.id] = new MyLab(o.id);
+                }
+
+            }
+
+        }
+
+        function initLinks(): void {
+
+            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
+                filter: { structureType: STRUCTURE_LINK }
+            });
+
+            if (structures && structures.length > 0) {
+                for (let o of structures) {
+                    cluster.links[o.id] = new MyLink(o.id);
+                }
+
+            }
+
+        }
+
     };
 
-    private initSpawns(): void {
-
-        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_SPAWN }
-        });
-
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.spawns[o.id] = new MySpawn(o.id);
+    // Check the cluster at the start of the run loop
+    public check(): void {
+        // Handle the first tick
+        if (this.firstTick) {
+            for (let r of Roles) {
+                this.updateRequired(r);
             }
-
+            this.firstTick = false;
         }
 
+        this.checkSpawns();
+        this.checkCreeps();
     }
 
-    private initExtensions(): void {
-
-        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_EXTENSION }
-        });
-
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.spawns[o.id] = new MyExtension(o.id);
-            }
-
-        }
-
-    }
-
-    private initTowers(): void {
-
-        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_TOWER }
-        });
-
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.spawns[o.id] = new MyTower(o.id);
-            }
-
-        }
-
-    }
-
-    private initLabs(): void {
-
-        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_LAB }
-        });
-
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.spawns[o.id] = new MyLab(o.id);
-            }
-
-        }
-
-    }
-
-    private initLinks(): void {
-
-        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
-            filter: { structureType: STRUCTURE_LINK }
-        });
-
-        if (structures && structures.length > 0) {
-            for (let o of structures) {
-                this.spawns[o.id] = new MyLink(o.id);
-            }
-
-        }
-
-    }
-
-    // Structures to collect info for
-    // STRUCTURE_SPAWN: "spawn",
-    // STRUCTURE_EXTENSION: "extension",
-    // STRUCTURE_ROAD: "road",
-    // STRUCTURE_WALL: "constructedWall",
-    // STRUCTURE_RAMPART: "rampart",
-    // STRUCTURE_KEEPER_LAIR: "keeperLair",
-    // STRUCTURE_PORTAL: "portal",
-    // STRUCTURE_CONTROLLER: "controller",
-    // STRUCTURE_LINK: "link",
-    // STRUCTURE_STORAGE: "storage",
-    // STRUCTURE_TOWER: "tower",
-    // STRUCTURE_OBSERVER: "observer",
-    // STRUCTURE_POWER_BANK: "powerBank",
-    // STRUCTURE_POWER_SPAWN: "powerSpawn",
-    // STRUCTURE_EXTRACTOR: "extractor",
-    // STRUCTURE_LAB: "lab",
-    // STRUCTURE_TERMINAL: "terminal",
-    // STRUCTURE_CONTAINER: "container",
-    // STRUCTURE_NUKER: "nuker",
-
-    // Run actions for the cluster
+    // Run cluster acions at the end of a run loop
     public run(): void {
+        this.runSpawns();
+        this.runTowers();
+        this.runVisuals();
+    }
 
+    public checkDefined(role: string): void {
+        if (!this.creepsAvailable[role]) {
+            this.creepsAvailable[role] = 0;
+        }
 
+        if (!this._creepsRequired[role]) {
+            this._creepsRequired[role] = 0;
+        }
+
+        if (!this.creepsRequested[role]) {
+            this.creepsRequested[role] = 0;
+        }
+    }
+    //#endregion Public
+
+    //#region Private
+
+    // Initialise creep counts for the cluster
+    private initCounts() {
+        this._creepsRequired = {}
+        this.creepsAvailable = {}
+        this.creepsRequested = {}
+    }
+
+    // Check creep counts
+    private checkCreeps() {
+
+        // Only check for creep requirements if the room can spawn
+        if (this.canSpawn) {
+            // Check what we have vs what we need
+            for (let r of Roles) {
+                checkRole(this, r);
+            }
+        }
+
+        return;
+
+        // Check upgrader numbers
+        function checkRole(cluster: MyCluster, role: string): void {
+            if (cluster.hasSpawns) {
+                if (cluster.creepsRequired(role) > (cluster.creepsAvailable[role] + cluster.creepsRequested[role])) {
+                    let priority: RequestPriority;
+
+                    if (cluster.creepsAvailable[role] + cluster.creepsRequested[role] == 0) {
+                        // No creeps of this type found or requested
+                        if (role == 'miner') {
+                            priority = RequestPriority.urgent;
+                        } else {
+                            priority = RequestPriority.high;
+                        }
+                    } else {
+                        priority = RequestPriority.low;
+                    }
+
+                    cluster.requestCreep(cluster.clusterName, role, priority);
+
+                }
+            }
+        }
+    }
+
+    // Check spawns
+    private checkSpawns() {
+
+        // Set the flag to false
+        this.canSpawn = false;
+
+        for (let s in this.spawns) {
+            let spawn: StructureSpawn | null = Game.getObjectById(s);
+
+            if (spawn && !spawn.spawning && spawn.room.energyAvailable >= 300) {
+                // Spawn is valid and not active
+                this.canSpawn = true;
+            }
+        }
+    }
+
+    // Creeps required
+    private creepsRequired(role: string): number {
+        if (this._creepsRequired[role] == 0) {
+            let updateRequired: boolean = false;
+
+            switch (role) {
+                case 'miner': {
+                    if (Game.time % _REFRESH.miner) {
+                        updateRequired = true;
+                    }
+                }
+                case 'upgrader': {
+                    if (Game.time % _REFRESH.upgrader) {
+                        updateRequired = true;
+                    }
+                }
+                case 'hauler': {
+                    if (Game.time % _REFRESH.hauler) {
+                        updateRequired = true;
+                    }
+                }
+                case 'worker': {
+                    if (Game.time % _REFRESH.worker) {
+                        updateRequired = true;
+                    }
+                }
+
+            }
+
+            if (updateRequired) {
+                this.updateRequired(role);
+            }
+        }
+
+        return this._creepsRequired[role]
+    }
+
+    private updateRequired(role: string): void {
+
+        // Make sure the role variables are defined
+        this.checkDefined(role);
+
+        switch (role) {
+            case 'miner': {
+                this._creepsRequired[role] = 1;
+            }
+            default: {
+                this._creepsRequired[role] = 1;
+            }
+        }
+    }
+
+    // Run the towers
+    private runTowers() {
+        let room: Room = Game.rooms[this.clusterName];
+
+        // Only run if hostiles in room and tower count>0
+        if (Object.keys(gameState.rooms[this.clusterName].hostiles).length > 0 && Object.keys(this.towers).length > 0) {
+            for (let t in this.towers) {
+                let tower: StructureTower | null = Game.getObjectById(t);
+
+                if (tower) {
+                    let closestHostile: Creep | null = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+
+                    // Attack closest hostile
+                    if (closestHostile != undefined) {
+                        tower.attack(closestHostile);
+                    }
+                }
+            }
+        }
+    }
+
+    private runVisuals() {
+        let room: Room = Game.rooms[this.clusterName];
+        let visRow: number = 0;
+        let visCol: number = 0;
+
+        placeText(`Sources:    ${Object.keys(gameState.rooms[this.clusterName].sources).length}`);
+        for (let r in this._creepsRequired) {
+            placeText(`${r}: ${this.creepsAvailable[r]}/${this.creepsRequired(r)}/${this.creepsRequested[r]}`);
+        }
+
+        return;
+
+        function placeText(text: string) {
+            room.visual.text(text, visCol, ++visRow, { align: "left" });
+        };
 
     }
 
+    private runSpawns() {
+        // Check the room can spawn
+        if (this.canSpawn) {
+            for (let id in this.spawns) {
+                // Get the spawn
+                let s: StructureSpawn | null = Game.getObjectById(id);
+
+                // Spawn is valid and not spawning
+                if (s && !s.spawning) {
+                    // Spawn based on priority
+                    switch (true) {
+                        case spawnByPriority(this, RequestPriority.urgent, s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority.high, s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority.medium, s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority.low, s): {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        return;
+
+        function spawnByPriority(cluster: MyCluster, priority: RequestPriority, spawn: StructureSpawn): boolean {
+            let spawnReturn: boolean = false;
+            const index: number = cluster.creepRequests.findIndex((request: CreepRequest) => { return request.priority == priority })
+
+            if (index >= 0) {
+                spawnReturn = cluster.creepRequests[index].actionRequest(spawn);
+
+                if (spawnReturn) {
+                    // Decrement requested creep number
+                    cluster.creepsRequested[cluster.creepRequests[index].creepRole]--;
+
+                    // Increment available creeps
+                    cluster.creepsAvailable[cluster.creepRequests[index].creepRole]++
+
+                    // Remove request array element
+                    cluster.creepRequests.splice(index, 1);
+                }
+
+            }
+
+            return spawnReturn;
+
+        }
+    }
+
+    // Make a creep request
+    private requestCreep(requestRoom: string, requestRole: string, priority: RequestPriority): void {
+
+        // Make request
+        this.creepRequests.push(new CreepRequest(this.clusterName, requestRoom, requestRole, priority));
+
+        // Track requested creeps
+        this.creepsRequested[requestRole]++;
+
+    };
+
+    //#endregion Private
 }

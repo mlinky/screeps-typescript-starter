@@ -1,24 +1,28 @@
+import '../prototypes/creep.prototype';
 import { log } from "log/log";
-import { MyCreep } from "./creep";
+import { MyCreep } from "../creeps/creep";
 import { MyCluster } from "./cluster";
-import { roomManager } from "managers/roomManager";
+import { MyRoom } from './room';
 import { Perfmon } from "utils/perfmon";
 import { profile } from "profiler/decorator";
+import { CreepMiner } from 'creeps/miner';
+import { CreepHauler } from 'creeps/hauler';
+import { CreepWorker } from 'creeps/worker';
+import { CreepUpgrader } from 'creeps/upgrader';
 
 // State.ts - core gamestate to store on the heap
 const _DEBUG_GAMESTATE: boolean = false;
 
 @profile
 export class GameState {
-    creeps: { [creepName: string]: MyCreep };
-    clusters: { [clusterHub: string]: MyCluster };
+    creeps: { [creepName: string]: MyCreep } = {};
+    clusters: { [clusterHub: string]: MyCluster } = {};
+    rooms: { [roomName: string]: MyRoom } = {};
     perfmon: Perfmon;
 
     initialised: boolean;
 
     constructor() {
-        this.creeps = {};
-        this.clusters = {};
         this.initialised = false;
         this.perfmon = new Perfmon();
     }
@@ -30,9 +34,9 @@ export class GameState {
             this.perfmon.start();
         }
 
-        this.initCreeps();
-
         this.initClusters();
+
+        this.initCreeps();
 
         if (_DEBUG_GAMESTATE) {
             // Stop the timer
@@ -56,7 +60,7 @@ export class GameState {
         this.creeps = {};
 
         for (const c of Object.values(Game.creeps)) {
-            this.creeps[c.name] = new MyCreep(c.name);
+            this.addCreep(c);
         }
 
         if (_DEBUG_GAMESTATE) {
@@ -66,6 +70,48 @@ export class GameState {
             // Log that a refresh has happened
             log.debug(`Creep initialise completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
         }
+    }
+
+    addCreep(creep: Creep) {
+
+        switch (creep.role) {
+            case 'miner': {
+                this.creeps[creep.name] = new CreepMiner(creep);
+                break;
+            }
+            case 'hauler': {
+                this.creeps[creep.name] = new CreepHauler(creep);
+                break;
+            }
+            case 'worker': {
+                this.creeps[creep.name] = new CreepWorker(creep);
+                break;
+            }
+            case 'upgrader': {
+                this.creeps[creep.name] = new CreepUpgrader(creep);
+                break;
+            }
+            default: {
+                log.error(`Error in addCreep role ${creep.role} not found`);
+            }
+        }
+
+        this.clusters[creep.homeRoom].checkDefined(creep.role)
+
+        this.clusters[creep.homeRoom].creepsAvailable[creep.role]++;
+
+        return;
+
+    }
+
+    deleteCreep(c: string) {
+        // Reduce available count
+        log.info(`Creep removed ${c} - ${this.creeps[c].role} - homeRoom: ${this.creeps[c].homeRoom} - workRoom: ${this.creeps[c].workRoom}`);
+        this.clusters[this.creeps[c].homeRoom].creepsAvailable[this.creeps[c].role]--;
+
+        // Remove from memory
+        delete this.creeps[c];
+
     }
 
     initClusters() {
@@ -87,7 +133,7 @@ export class GameState {
 
             // Collect rooms with spawns first
             if (r.hasSpawns()) {
-                this.clusters[r.name] = new MyCluster(r.name);
+                this.clusters[r.name] = new MyCluster(r);
             } else {
                 // Store 'other' rooms for a second pass - below
                 pass2Rooms.push(r);
@@ -117,6 +163,25 @@ export class GameState {
 
     run() {
 
+        // Cluster check code
+        for (let c in this.clusters) {
+            this.clusters[c].check();
+        }
+
+        for (let c in this.creeps) {
+            if (!(c in Game.creeps)) {
+                // Creep is dead - remove from collection
+                this.deleteCreep(c);
+            }
+        }
+
+        for (let c in this.clusters) {
+            this.clusters[c].run();
+        }
+
+        for (let c in this.creeps) {
+            this.creeps[c].run();
+        }
+
     }
 }
-
