@@ -14,6 +14,7 @@ export class CreepMiner extends MyCreep {
     public run() {
 
         //log.info('Miner running');
+        // Including tasks?
 
 
         // // Check the miner has a source defined
