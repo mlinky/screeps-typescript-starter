@@ -1,14 +1,17 @@
 import { MyDefault } from "./default";
 import { profile } from "profiler/decorator";
-import { gameState } from "defs";
 import { map, locationDetails } from "./map";
+import { log } from "log/log";
+
+const _DEBUG_SOURCES = false;
 
 @profile
 export class MySource extends MyDefault {
     source: Source;
     roomName: string;
     container?: StructureContainer;
-    miningSpots: RoomPosition[] = [];
+    miningSpots: MiningSpot[] = [];
+    workParts: number = 0;
 
     constructor(source: Source) {
         // Call the base class
@@ -31,13 +34,13 @@ export class MySource extends MyDefault {
         let surroundings: { [position: number]: locationDetails } = map.lookAround(this.source.pos);
 
         // Inspect surroundings
-        for (let i = 0; i <= 8; i++) {
-            for (let l of surroundings[i].results) {
+        for (let s of Object.values(surroundings)) {
+            for (let l of s.results) {
                 switch (l.type) {
                     case LOOK_TERRAIN: {
                         if (l.terrain != 'wall') {
                             // terrain is not wall, potential mining spot
-                            this.miningSpots.push(new RoomPosition(surroundings[i].x, surroundings[i].y, surroundings[i].room));
+                            this.miningSpots.push(new MiningSpot(s.x, s.y, s.room));
                         }
 
                         break;
@@ -54,4 +57,26 @@ export class MySource extends MyDefault {
             }
         }
     }
+
+    public check(): void {
+        // Check the source
+        if (_DEBUG_SOURCES) {
+            log.debug(`Room: ${this.roomName}, Source: ${this.source.id}, Container: ${(this.container ? this.container.id : 'undefined')}, Mining spots: ${this.miningSpots.length}, Workparts: ${this.workParts}`);
+        }
+
+
+
+
+    }
+}
+
+export class MiningSpot {
+    pos: RoomPosition;
+    miners: string[] = [];
+    workParts: number = 0;
+
+    constructor(x: number, y: number, room: string) {
+        this.pos = new RoomPosition(x, y, room);
+    }
+
 }

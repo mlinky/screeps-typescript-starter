@@ -6,7 +6,6 @@ import { log } from "log/log";
 
 @profile
 export class CreepMiner extends MyCreep {
-    source: Source | undefined = undefined;
 
     constructor(creep: Creep) {
         super(creep);

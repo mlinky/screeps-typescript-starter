@@ -146,6 +146,18 @@ export class MyRoom {
 
     }
 
+    public check(): void {
+        checkSources(this);
+
+        return;
+
+        function checkSources(room: MyRoom): void {
+            for (let s in room.sources) {
+                room.sources[s].check();
+            }
+        }
+    }
+
     public run(): void {
         this.updateHostiles();
 

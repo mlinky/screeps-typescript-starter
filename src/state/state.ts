@@ -163,11 +163,7 @@ export class GameState {
 
     run() {
 
-        // Cluster check code
-        for (let c in this.clusters) {
-            this.clusters[c].check();
-        }
-
+        // Tidy up creeps
         for (let c in this.creeps) {
             if (!(c in Game.creeps)) {
                 // Creep is dead - remove from collection
@@ -175,10 +171,27 @@ export class GameState {
             }
         }
 
+        // Check cluster
+        for (let c in this.clusters) {
+            this.clusters[c].check();
+        }
+
+        // Check rooms
+        for (let r in this.rooms) {
+            this.rooms[r].check();
+        }
+
+        // Run cluster
         for (let c in this.clusters) {
             this.clusters[c].run();
         }
 
+        // Run rooms
+        for (let r in this.rooms) {
+            this.rooms[r].run();
+        }
+
+        // Run creeps
         for (let c in this.creeps) {
             this.creeps[c].run();
         }
