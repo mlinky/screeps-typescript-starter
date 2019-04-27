@@ -9,6 +9,11 @@ import { profile } from "profiler/decorator";
 import { CreepRequest, RequestPriority } from "creeps/creepRequest";
 import { log } from "log/log";
 import { gameState } from "defs";
+import { Tasks } from 'creep-tasks/Tasks'
+import { Task } from "creep-tasks/Task";
+import { CreepMiner } from "creeps/miner";
+import { CreepHauler } from "creeps/hauler";
+import { CreepUpgrader } from "creeps/upgrader";
 
 const Roles = ['miner', 'hauler', 'worker', 'upgrader']
 
@@ -36,6 +41,7 @@ export class MyCluster {
     _creepsRequired: { [role: string]: number } = {}
     creepsAvailable: { [role: string]: number } = {}
     creepsRequested: { [role: string]: number } = {}
+    tasks: { [digest: string]: Task } = {};
 
     initialised: boolean = false;
     firstTick: boolean = true;
@@ -88,9 +94,7 @@ export class MyCluster {
                 for (let o of structures) {
                     cluster.spawns[o.id] = new MySpawn(o.id);
                 }
-
             }
-
         }
 
         function initExtensions(): void {
@@ -103,9 +107,7 @@ export class MyCluster {
                 for (let o of structures) {
                     cluster.extensions[o.id] = new MyExtension(o.id);
                 }
-
             }
-
         }
 
         function initTowers(): void {
@@ -118,9 +120,7 @@ export class MyCluster {
                 for (let o of structures) {
                     cluster.towers[o.id] = new MyTower(o.id);
                 }
-
             }
-
         }
 
         function initLabs(): void {
@@ -133,9 +133,7 @@ export class MyCluster {
                 for (let o of structures) {
                     cluster.labs[o.id] = new MyLab(o.id);
                 }
-
             }
-
         }
 
         function initLinks(): void {
@@ -148,9 +146,7 @@ export class MyCluster {
                 for (let o of structures) {
                     cluster.links[o.id] = new MyLink(o.id);
                 }
-
             }
-
         }
 
     };
@@ -299,7 +295,16 @@ export class MyCluster {
 
         switch (role) {
             case 'miner': {
-                this._creepsRequired[role] = 1;
+                this._creepsRequired[role] = CreepMiner.required(this);
+            }
+            case 'hauler': {
+                this._creepsRequired[role] = CreepHauler.required(this);
+            }
+            case 'worker': {
+                this._creepsRequired[role] = CreepHauler.required(this);
+            }
+            case 'upgrader': {
+                this._creepsRequired[role] = CreepUpgrader.required(this);
             }
             default: {
                 this._creepsRequired[role] = 1;

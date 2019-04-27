@@ -66,7 +66,7 @@ export class MyRoom {
             let controller: StructureController | undefined = Game.rooms[room.roomName].controller;
 
             if (controller) {
-                room.controller = new MyController(controller.id);
+                room.controller = new MyController(controller);
             }
         }
 

@@ -1,5 +1,6 @@
 import { profile } from '../profiler/decorator';
 import { log } from 'log/log';
+import { Traveler } from 'utils/traveler';
 
 export { }
 
@@ -25,9 +26,16 @@ declare global {
         doUpgradeController(): void;
         doBuild(): void;
         resetDestination(): void;
+        travelTo(destination: RoomPosition | { pos: RoomPosition }, options?: TravelToOptions): any;
 
     }
 }
+
+// assigns a function to Creep.prototype: creep.travelTo(destination)
+Creep.prototype.travelTo = function (destination: RoomPosition | { pos: RoomPosition }, options?: TravelToOptions) {
+    return Traveler.travelTo(this, destination, options);
+};
+
 
 Creep.prototype.runRole = function (): void {
 
@@ -138,7 +146,8 @@ Creep.prototype.collectEnergy = function (): void {
                 break;
 
             case ERR_NOT_IN_RANGE:
-                this.moveTo(this.pickupSource);
+                this.moveTo(this.pickupSource)
+                this.travelTo(this.pickupSource);;
                 break;
 
             case ERR_NO_BODYPART:
@@ -169,7 +178,8 @@ Creep.prototype.collectEnergy = function (): void {
                 break;
 
             case ERR_NOT_IN_RANGE:
-                this.moveTo(this.harvestSource);
+                // this.moveTo(this.harvestSource);
+                this.travelTo(this.harvestSource);
                 break;
 
             case ERR_NO_BODYPART:
@@ -200,7 +210,8 @@ Creep.prototype.collectEnergy = function (): void {
 
             case ERR_NOT_IN_RANGE:
                 // move towards it
-                this.moveTo(this.energySource);
+                // this.moveTo(this.energySource);
+                this.travelTo(this.energySource);
                 return;
 
             default:
@@ -236,7 +247,8 @@ Creep.prototype.deliverEnergy = function (): void {
 
             case ERR_NOT_IN_RANGE:
                 // move towards it
-                this.moveTo(this.energyDestination);
+                // this.moveTo(this.energyDestination);
+                this.travelTo(this.energyDestination);
                 return;
 
             case ERR_INVALID_TARGET:
@@ -279,7 +291,8 @@ Creep.prototype.doUpgradeController = function (): void {
                 break;
 
             case ERR_NOT_IN_RANGE:
-                this.moveTo(this.room.controller);
+                //this.moveTo(this.room.controller);
+                this.travelTo(this.room.controller);
                 break;
 
             case ERR_NO_BODYPART:
@@ -306,7 +319,8 @@ Creep.prototype.doBuild = function (): void {
                 break;
 
             case ERR_NOT_IN_RANGE:
-                this.moveTo(this.room.constructionSites[0]);
+                //this.moveTo(this.room.constructionSites[0]);
+                this.travelTo(this.room.constructionSites[0]);
                 break;
 
             case ERR_NO_BODYPART:
@@ -622,7 +636,8 @@ abstract class creepMiner {
                     creep.source = undefined;
                     break;
                 case ERR_NOT_IN_RANGE:
-                    creep.moveTo(creep.source);
+                    //creep.moveTo(creep.source);
+                    creep.travelTo(creep.source);
                     break;
                 case ERR_NO_BODYPART:
                     // creep.suicide();

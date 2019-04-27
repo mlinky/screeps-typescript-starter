@@ -9,7 +9,7 @@ declare global {
         spawns: StructureSpawn[];
         towers: StructureTower[];
         availableSpawn: StructureSpawn;
-        creepsNeeded: CreepRequest[];
+        //        creepsNeeded: CreepRequest[];
         minersAvailable: number;
         upgradersAvailable: number;
         upgradersRequired: number;
@@ -208,15 +208,15 @@ Object.defineProperty(Room.prototype, 'buildersAvailable', {
 
 });
 
-Room.prototype.requestCreep = function (requestRoom: string, requestRole: string): void {
+// Room.prototype.requestCreep = function (requestRoom: string, requestRole: string): void {
 
-    if (_.isUndefined(this.creepsNeeded)) {
-        this.creepsNeeded = [];
-    }
+//     if (_.isUndefined(this.creepsNeeded)) {
+//         this.creepsNeeded = [];
+//     }
 
-    this.creepsNeeded.push(new CreepRequest(requestRoom, requestRole));
+//     this.creepsNeeded.push(new CreepRequest(requestRoom, requestRole));
 
-};
+// };
 
 Room.prototype.hasSpawns = function (): boolean {
 
@@ -253,111 +253,111 @@ Room.prototype.spawnCreep = function (): void {
 
 };
 
-Room.prototype.trySpawn = function (role: string): boolean {
+// Room.prototype.trySpawn = function (role: string): boolean {
 
-    let r: CreepRequest | undefined = _.find(this.creepsNeeded, function (o: CreepRequest) { return o.creepRole === role; });
-    if (r != null) {
-        return r.actionRequest(this);
-    }
+//     let r: CreepRequest | undefined = _.find(this.creepsNeeded, function (o: CreepRequest) { return o.creepRole === role; });
+//     if (r != null) {
+//         return r.actionRequest(this);
+//     }
 
-    return false;
+//     return false;
 
-};
+// };
 
 /////
-@profile
-class CreepRequest {
+// @profile
+// class CreepRequest {
 
-    roomName: string;
-    creepRole: string;
+//     roomName: string;
+//     creepRole: string;
 
-    constructor(roomName: string, creepRole: string) {
+//     constructor(roomName: string, creepRole: string) {
 
-        this.roomName = roomName;
-        this.creepRole = creepRole;
-    }
+//         this.roomName = roomName;
+//         this.creepRole = creepRole;
+//     }
 
-    actionRequest(room: Room): boolean {
-        // Get the spawn object
-        let s: StructureSpawn = room.availableSpawn;
+//     actionRequest(room: Room): boolean {
+//         // Get the spawn object
+//         let s: StructureSpawn = room.availableSpawn;
 
-        // Check spawn is valid
-        if (_.isUndefined(s)) {
-            return false;
-        }
+//         // Check spawn is valid
+//         if (_.isUndefined(s)) {
+//             return false;
+//         }
 
-        let f = this.creepFeatures(room);
+//         let f = this.creepFeatures(room);
 
-        let n = this.creepRole + Game.time;
+//         let n = this.creepRole + Game.time;
 
-        switch (s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: room.name, workRoom: this.roomName } })) {
-            case OK:
-                return true;
-            case ERR_NOT_OWNER:
-                console.log('Failed to spawn ' + this.creepRole + ' - ERR_NOT_OWNER')
-                return false;
-            case ERR_NAME_EXISTS:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_NAME_EXISTS')
-                return false;
-            case ERR_BUSY:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_BUSY')
-                return false;
-            case ERR_NOT_ENOUGH_ENERGY:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_NOT_ENOUGH_ENERGY')
-                return false;
-            case ERR_INVALID_ARGS:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_INVALID_ARGS')
-                return false;
-            case ERR_RCL_NOT_ENOUGH:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_RCL_NOT_ENOUGH')
-                return false;
-            default:
-                return false;
-        }
+//         switch (s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: room.name, workRoom: this.roomName } })) {
+//             case OK:
+//                 return true;
+//             case ERR_NOT_OWNER:
+//                 console.log('Failed to spawn ' + this.creepRole + ' - ERR_NOT_OWNER')
+//                 return false;
+//             case ERR_NAME_EXISTS:
+//                 console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_NAME_EXISTS')
+//                 return false;
+//             case ERR_BUSY:
+//                 console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_BUSY')
+//                 return false;
+//             case ERR_NOT_ENOUGH_ENERGY:
+//                 console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_NOT_ENOUGH_ENERGY')
+//                 return false;
+//             case ERR_INVALID_ARGS:
+//                 console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_INVALID_ARGS')
+//                 return false;
+//             case ERR_RCL_NOT_ENOUGH:
+//                 console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_RCL_NOT_ENOUGH')
+//                 return false;
+//             default:
+//                 return false;
+//         }
 
-    }
+//     }
 
-    creepFeatures(room: Room) {
+//     creepFeatures(room: Room) {
 
-        // WORK             100
-        // MOVE             50
-        // CARRY            50
-        // ATTACK           80
-        // RANGED_ATTACK    150
-        // HEAL             200
-        // TOUGH            10
-        // CLAIM            600
+//         // WORK             100
+//         // MOVE             50
+//         // CARRY            50
+//         // ATTACK           80
+//         // RANGED_ATTACK    150
+//         // HEAL             200
+//         // TOUGH            10
+//         // CLAIM            600
 
-        switch (this.creepRole) {
-            case 'hauler':
-                if (room.energyAvailable <= 400) {
-                    return [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
-                } else if (room.energyAvailable <= 450) {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-                } else if (room.energyAvailable <= 500) {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-                } else if (room.energyAvailable <= 600) {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
-                } else {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
-                }
-            case 'miner':
-                if (room.energyAvailable <= 450) {
-                    return [WORK, WORK, CARRY, MOVE];
-                } else if (room.energyAvailable <= 550) {
-                    return [WORK, WORK, WORK, CARRY, CARRY, MOVE];
-                } else if (room.energyAvailable <= 650) {
-                    return [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
-                } else {
-                    return [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
-                }
-            case 'worker':
-            case 'upgrader':
-            default:
-                return [WORK, WORK, CARRY, MOVE];
+//         switch (this.creepRole) {
+//             case 'hauler':
+//                 if (room.energyAvailable <= 400) {
+//                     return [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
+//                 } else if (room.energyAvailable <= 450) {
+//                     return [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
+//                 } else if (room.energyAvailable <= 500) {
+//                     return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
+//                 } else if (room.energyAvailable <= 600) {
+//                     return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
+//                 } else {
+//                     return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
+//                 }
+//             case 'miner':
+//                 if (room.energyAvailable <= 450) {
+//                     return [WORK, WORK, CARRY, MOVE];
+//                 } else if (room.energyAvailable <= 550) {
+//                     return [WORK, WORK, WORK, CARRY, CARRY, MOVE];
+//                 } else if (room.energyAvailable <= 650) {
+//                     return [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
+//                 } else {
+//                     return [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
+//                 }
+//             case 'worker':
+//             case 'upgrader':
+//             default:
+//                 return [WORK, WORK, CARRY, MOVE];
 
-        }
+//         }
 
-    }
+//     }
 
-}
+// }

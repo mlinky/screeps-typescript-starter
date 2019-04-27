@@ -1,6 +1,7 @@
 'use strict';
 
 import 'prototypes/room.prototype';
+import 'creep-tasks/prototypes'
 import { ErrorMapper } from "utils/ErrorMapper";
 import { memoryManager } from "managers/memoryManager";
 import { USE_PROFILER } from './settings';

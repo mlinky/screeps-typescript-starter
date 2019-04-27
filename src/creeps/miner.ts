@@ -3,6 +3,8 @@ import { MyCreep } from "creeps/creep";
 import { MySource } from "state/source";
 import { profile } from "profiler/decorator";
 import { log } from "log/log";
+import { MyCluster } from "state/cluster";
+import { Tasks } from "creep-tasks/Tasks";
 
 @profile
 export class CreepMiner extends MyCreep {
@@ -14,25 +16,22 @@ export class CreepMiner extends MyCreep {
     public run() {
 
         //log.info('Miner running');
-        // Including tasks?
 
+        if (this.creep.isIdle) {
+            this.creep.task = Tasks.harvest(<Source>Game.getObjectById('c44207728e621fc'));
+        }
 
-        // // Check the miner has a source defined
-        // if (!this.source) {
-        //     // Loop sources looking for an unclaimed source
-        //     for (let s in gameState.clusters[this.homeRoom].rooms[this.homeRoom].sources) {
-        //         let source: MySource = gameState.clusters[this.homeRoom].rooms[this.homeRoom].sources[s]
+        this.creep.run()
 
-        //         if (source) {
+    }
 
-        //         }
+    public static required(cluster: MyCluster): number {
+        // How many miners required for the cluster
+        let required: number = 1;
 
-        //         // if (!source.isClaimed()) {
-        //         //     // Source is not yet claimed
-        //         //     source.claim(creep);
-        //         //     creep.collecting = true;
-        //         //     creep.source = source;
-        //         //     break;
-        //         // }
+        // Just do the number of sources
+        required = Object.keys(gameState.rooms[cluster.clusterName].sources).length;
+
+        return required;
     }
 }

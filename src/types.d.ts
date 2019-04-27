@@ -1,5 +1,3 @@
-import { GameState } from "state/state";
-
 // memory extension samples
 interface CreepMemory {
   role: string;
@@ -18,6 +16,10 @@ interface Memory {
 // `global` extension samples
 declare namespace NodeJS {
   interface Global {
+    help: string;
+    report: (clusterName?: string | undefined) => string;
+    showSpawnQueue: (clusterName?: string | undefined) => string;
+    debug: (type: string, name: string) => void;
     log: any;
   }
 }

@@ -2,6 +2,8 @@ import { MyDefault } from "./default";
 import { profile } from "profiler/decorator";
 import { map, locationDetails } from "./map";
 import { log } from "log/log";
+import { gameState } from "defs";
+import { TaskHarvest } from "creep-tasks/TaskInstances/task_harvest";
 
 const _DEBUG_SOURCES = false;
 
@@ -63,10 +65,6 @@ export class MySource extends MyDefault {
         if (_DEBUG_SOURCES) {
             log.debug(`Room: ${this.roomName}, Source: ${this.source.id}, Container: ${(this.container ? this.container.id : 'undefined')}, Mining spots: ${this.miningSpots.length}, Workparts: ${this.workParts}`);
         }
-
-
-
-
     }
 }
 
@@ -78,5 +76,4 @@ export class MiningSpot {
     constructor(x: number, y: number, room: string) {
         this.pos = new RoomPosition(x, y, room);
     }
-
 }

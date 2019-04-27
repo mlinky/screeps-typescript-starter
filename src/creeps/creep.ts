@@ -1,6 +1,7 @@
 import '../prototypes/creep.prototype';
 import { profile } from "profiler/decorator";
 import { log } from 'log/log';
+import { MyCluster } from 'state/cluster';
 
 @profile
 export class MyCreep {
@@ -29,5 +30,8 @@ export class MyCreep {
 
     }
 
+    required(cluster: MyCluster) {
+
+    }
 
 }
