@@ -60,7 +60,7 @@ export class GameState {
         this.creeps = {};
 
         for (const c of Object.values(Game.creeps)) {
-            this.addCreep(c);
+            this.addCreep(c, true);
         }
 
         if (_DEBUG_GAMESTATE) {
@@ -72,7 +72,7 @@ export class GameState {
         }
     }
 
-    addCreep(creep: Creep) {
+    addCreep(creep: Creep, updateAvailable?: boolean) {
 
         switch (creep.role) {
             case 'miner': {
@@ -98,7 +98,9 @@ export class GameState {
 
         this.clusters[creep.homeRoom].checkDefined(creep.role)
 
-        this.clusters[creep.homeRoom].creepsAvailable[creep.role]++;
+        if (updateAvailable) {
+            this.clusters[creep.homeRoom].creepsAvailable[creep.role]++;
+        }
 
         return;
 
@@ -107,6 +109,7 @@ export class GameState {
     deleteCreep(c: string) {
         // Reduce available count
         log.info(`Creep removed ${c} - ${this.creeps[c].role} - homeRoom: ${this.creeps[c].homeRoom} - workRoom: ${this.creeps[c].workRoom}`);
+
         this.clusters[this.creeps[c].homeRoom].creepsAvailable[this.creeps[c].role]--;
 
         // Remove from memory

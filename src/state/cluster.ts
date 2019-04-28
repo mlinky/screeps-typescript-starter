@@ -14,15 +14,10 @@ import { Task } from "creep-tasks/Task";
 import { CreepMiner } from "creeps/miner";
 import { CreepHauler } from "creeps/hauler";
 import { CreepUpgrader } from "creeps/upgrader";
+import { checkRefresh, _REFRESH } from "utils/refresh";
+import { CreepWorker } from "creeps/worker";
 
 const Roles = ['miner', 'hauler', 'worker', 'upgrader']
-
-const _REFRESH = {
-    miner: 100,
-    upgrader: 100,
-    worker: 100,
-    hauler: 100
-};
 
 @profile
 export class MyCluster {
@@ -244,7 +239,13 @@ export class MyCluster {
         for (let s in this.spawns) {
             let spawn: StructureSpawn | null = Game.getObjectById(s);
 
-            if (spawn && !spawn.spawning && spawn.room.energyAvailable >= 300) {
+            if (spawn && spawn.spawning && spawn.spawning.remainingTime == 1) {
+                // Spawn is nearly complete - add the creep ready for action
+                if (!Game.creeps[spawn.spawning.name].added) {
+                    gameState.addCreep(Game.creeps[spawn.spawning.name]);
+                    Game.creeps[spawn.spawning.name].added = true;
+                }
+            } else if (spawn && spawn.room.energyAvailable >= 300) {
                 // Spawn is valid and not active
                 this.canSpawn = true;
             }
@@ -258,22 +259,22 @@ export class MyCluster {
 
             switch (role) {
                 case 'miner': {
-                    if (Game.time % _REFRESH.miner) {
+                    if (checkRefresh(_REFRESH.miner)) {
                         updateRequired = true;
                     }
                 }
                 case 'upgrader': {
-                    if (Game.time % _REFRESH.upgrader) {
+                    if (checkRefresh(_REFRESH.upgrader)) {
                         updateRequired = true;
                     }
                 }
                 case 'hauler': {
-                    if (Game.time % _REFRESH.hauler) {
+                    if (checkRefresh(_REFRESH.hauler)) {
                         updateRequired = true;
                     }
                 }
                 case 'worker': {
-                    if (Game.time % _REFRESH.worker) {
+                    if (checkRefresh(_REFRESH.worker)) {
                         updateRequired = true;
                     }
                 }
@@ -296,18 +297,23 @@ export class MyCluster {
         switch (role) {
             case 'miner': {
                 this._creepsRequired[role] = CreepMiner.required(this);
+                break;
             }
             case 'hauler': {
                 this._creepsRequired[role] = CreepHauler.required(this);
+                break;
             }
             case 'worker': {
-                this._creepsRequired[role] = CreepHauler.required(this);
+                this._creepsRequired[role] = CreepWorker.required(this);
+                break;
             }
             case 'upgrader': {
                 this._creepsRequired[role] = CreepUpgrader.required(this);
+                break;
             }
             default: {
                 this._creepsRequired[role] = 1;
+                break;
             }
         }
     }

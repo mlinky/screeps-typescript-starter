@@ -5,6 +5,7 @@ import { profile } from "profiler/decorator";
 import { log } from "log/log";
 import { MyCluster } from "state/cluster";
 import { Tasks } from "creep-tasks/Tasks";
+import { harvestTargetType } from "creep-tasks/TaskInstances/task_harvest";
 
 @profile
 export class CreepMiner extends MyCreep {
@@ -17,8 +18,13 @@ export class CreepMiner extends MyCreep {
 
         //log.info('Miner running');
 
-        if (this.creep.isIdle) {
-            this.creep.task = Tasks.harvest(<Source>Game.getObjectById('c44207728e621fc'));
+        if (!this.creep.task) {
+            for (let s of Object.values(gameState.rooms[this.workRoom].sources)) {
+                let r: RoomObject | null = Game.getObjectById(s.id);
+                if (r && r.targetedBy.length == 0) {
+                    this.creep.task = Tasks.harvest(<harvestTargetType>r);
+                }
+            }
         }
 
         this.creep.run()
@@ -31,6 +37,8 @@ export class CreepMiner extends MyCreep {
 
         // Just do the number of sources
         required = Object.keys(gameState.rooms[cluster.clusterName].sources).length;
+
+        //log.info(`Miners required:${required}`);
 
         return required;
     }

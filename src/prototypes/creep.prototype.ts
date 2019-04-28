@@ -6,6 +6,7 @@ export { }
 
 declare global {
     interface Creep {
+        added: boolean;
         role: string;
         homeRoom: string;
         workRoom: string;
@@ -341,6 +342,25 @@ Creep.prototype.resetDestination = function (): void {
     this.collecting = false;
 
 };
+
+Object.defineProperty(Creep.prototype, 'added', {
+    get: function (): boolean {
+        // If we dont have the value stored locally
+        if (!this._added) {
+            // Set the value
+            this._added = false;
+        }
+        return this._added;
+    },
+
+    set: function (value: boolean) {
+        this._added = value;
+    },
+
+    enumerable: false,
+    configurable: true
+
+});
 
 Object.defineProperty(Creep.prototype, 'role', {
     get: function () {
