@@ -3,10 +3,9 @@ import { MySource } from "./source";
 import { MyContainer } from "./container";
 import { MyContructionSite } from "./constructionSite";
 import { MyRoad } from "./road";
-import { MyWall } from "./wall";
-import { MyRampart } from "./ramparts";
 import { profile } from "profiler/decorator";
 import { MyHostileCreep } from "./hostilerCreep";
+import { gameState } from "defs";
 
 @profile
 export class MyRoom {
@@ -19,8 +18,6 @@ export class MyRoom {
     containers: { [sourceID: string]: MyContainer } = {};
     constructionSites: { [sourceID: string]: MyContructionSite } = {};
     roads: { [sourceID: string]: MyRoad } = {};
-    walls: { [sourceID: string]: MyWall } = {};
-    ramparts: { [sourceID: string]: MyRampart } = {};
 
     hostiles: { [creepID: string]: MyHostileCreep } = {};
 
@@ -51,11 +48,9 @@ export class MyRoom {
 
         initController();
         initSources();
-        initContainers();
+        this.updateContainers();
         initConstructionSites();
-        initRoads();
-        initWalls();
-        initRamparts();
+        this.updateRoads();
 
         this.initialised = true;
 
@@ -81,65 +76,13 @@ export class MyRoom {
             }
         }
 
-        function initContainers(): void {
-
-            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_CONTAINER }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    room.containers[o.id] = new MyContainer(o.id);
-                }
-            }
-        }
-
         function initConstructionSites(): void {
 
             const sites = Game.rooms[room.roomName].find(FIND_MY_CONSTRUCTION_SITES);
 
             if (sites && sites.length > 0) {
                 for (let o of sites) {
-                    room.constructionSites[o.id] = new MyContructionSite(o.id);
-                }
-            }
-        }
-
-        function initRoads(): void {
-
-            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_ROAD }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    room.roads[o.id] = new MyRoad(o.id);
-                }
-            }
-        }
-
-        function initWalls(): void {
-
-            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_WALL }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    room.walls[o.id] = new MyWall(o.id);
-                }
-            }
-        }
-
-        function initRamparts(): void {
-
-            const structures = Game.rooms[room.roomName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_RAMPART }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    room.ramparts[o.id] = new MyRampart(o.id);
+                    room.constructionSites[o.id] = new MyContructionSite(o);
                 }
             }
         }
@@ -169,6 +112,106 @@ export class MyRoom {
         // Store current hostile creeps
         for (let t of targets) {
             this.hostiles[t.id] = new MyHostileCreep(t);
+        }
+    }
+
+    public constructionComplete(id: string) {
+
+        //gameState.clusters[this.homeRoom].newStructure(gameState.rooms[this.workRoom].constructionSites[i].type);
+        switch (this.constructionSites[id].type) {
+            case "extension": {
+                gameState.clusters[this.clusterName].updateExtensions();
+                break;
+            }
+            case "rampart": {
+                gameState.clusters[this.clusterName].updateRamparts();
+                break;
+            }
+            case "road": {
+                this.updateRoads();
+                break;
+            }
+            case "spawn": {
+                gameState.clusters[this.clusterName].updateSpawns();
+                break;
+            }
+            case "link": {
+                gameState.clusters[this.clusterName].updateLinks();
+                break;
+            }
+            case "constructedWall": {
+                gameState.clusters[this.clusterName].updateWalls();
+                break;
+            }
+            case "storage": {
+                gameState.clusters[this.clusterName].updateStorage();
+                break;
+            }
+            case "tower": {
+                gameState.clusters[this.clusterName].updateTowers();
+                break;
+            }
+            case "observer": {
+                gameState.clusters[this.clusterName].updateObserver();
+                break;
+            }
+            case "powerSpawn": {
+                gameState.clusters[this.clusterName].updatePowerSpawn();
+                break;
+            }
+            case "extractor": {
+                this.updateExtractor();
+                break;
+            }
+            case "lab": {
+                gameState.clusters[this.clusterName].updateLabs();
+                break;
+            }
+            case "terminal": {
+                gameState.clusters[this.clusterName].updateTerminal();
+                break;
+            }
+            case "container": {
+                this.updateContainers()
+                break;
+            }
+            case "nuker": {
+                gameState.clusters[this.clusterName].updateNuker();
+                break;
+            }
+        }
+    }
+
+    public updateRoads() {
+        const structures = Game.rooms[this.roomName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_ROAD }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.roads[o.id]) {
+                    this.roads[o.id] = new MyRoad(o.id);
+                }
+            }
+        }
+    }
+
+    public updateExtractor() {
+        // throw new Error("Method not implemented.");
+    }
+
+    public updateContainers() {
+
+        const structures = Game.rooms[this.roomName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_CONTAINER }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.containers[o.id]) {
+                    this.containers[o.id] = new MyContainer(o.id);
+                }
+            }
         }
     }
 }

@@ -20,6 +20,8 @@ export class GameState {
     rooms: { [roomName: string]: MyRoom } = {};
     perfmon: Perfmon;
 
+    constructionSites: number = 0;
+
     initialised: boolean;
 
     constructor() {

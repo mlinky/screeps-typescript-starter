@@ -30,9 +30,10 @@ export class CreepHauler extends MyCreep {
         // log.info(`Creep energy ${Game.creeps[this.name].carry.energy}`);
 
         if (this.creep.carry.energy > 0) {
-            // Go do upgrade
+            // Deliver energy to spawn, extension, storage
             // log.info('setting transfer');
             this.creep.task = Tasks.transfer(<StructureSpawn>Game.getObjectById('5cbdd7a617d6ac3588f51303'));
+
 
         } else {
             // Go get energy

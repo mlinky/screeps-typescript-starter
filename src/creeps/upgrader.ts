@@ -53,11 +53,11 @@ export class CreepUpgrader extends MyCreep {
                     return 2;
                 }
                 default: {
-                    return 2;
+                    return 3;
                 }
 
             }
         }
-        return 0;
+        return 1;
     }
 }

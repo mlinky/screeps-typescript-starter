@@ -3,6 +3,8 @@ import { profile } from "profiler/decorator";
 import { log } from 'log/log';
 import { MyCluster } from 'state/cluster';
 import { MyRoom } from 'state/room';
+import { gameState } from 'defs';
+import { Tasks } from 'creep-tasks/Tasks';
 
 @profile
 export class MyCreep {
@@ -40,7 +42,7 @@ export class MyCreep {
     findDroppedEnergy(room: MyRoom): Resource | undefined {
 
         for (let r of room.room.droppedResource) {
-            if (r.resourceType == RESOURCE_ENERGY) {
+            if (r.resourceType == RESOURCE_ENERGY && r.amount >= this.creep.carryCapacity) {
                 return r;
             }
         }
@@ -49,4 +51,19 @@ export class MyCreep {
 
     }
 
+    findConstructionSite(room: MyRoom): ConstructionSite | undefined {
+
+        for (let i in gameState.rooms[this.workRoom].constructionSites) {
+            let o = <ConstructionSite>Game.getObjectById(i);
+
+            if (o) {
+                // Object is valid
+                return o;
+            } else {
+                // Construction complete
+                gameState.rooms[this.workRoom].constructionComplete(i);
+            }
+        }
+        return;
+    }
 }
