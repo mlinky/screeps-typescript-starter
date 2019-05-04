@@ -213,5 +213,12 @@ export class MyRoom {
                 }
             }
         }
+
+        // Update containers now
+        for (let s of Object.values(this.sources)) {
+            if (s.updateContainers()) {
+                break;
+            }
+        }
     }
 }

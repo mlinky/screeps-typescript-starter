@@ -9,6 +9,7 @@ import { harvestTargetType } from "creep-tasks/TaskInstances/task_harvest";
 
 @profile
 export class CreepMiner extends MyCreep {
+    onContainer: boolean = false;
 
     constructor(creep: Creep) {
         super(creep);
@@ -27,8 +28,31 @@ export class CreepMiner extends MyCreep {
             }
         }
 
-        this.creep.run()
+        if (this.creep.task) {
+            // See if we're on the container
+            let runTask: boolean = true;
 
+            if (!this.onContainer) {
+                let s: Source | undefined = <Source>this.creep.task.target;
+
+                if (s && gameState.rooms[this.workRoom].sources[s.id] && gameState.rooms[this.workRoom].sources[s.id].container) {
+                    let containerPos: RoomPosition = gameState.rooms[this.workRoom].sources[s.id].container!.pos;
+
+                    // Is the creep on the container?
+                    if (this.creep.pos.isEqualTo(containerPos.x, containerPos.y)) {
+                        this.onContainer = true;
+                    } else {
+                        this.creep.travelTo(containerPos);
+                        runTask = false;
+                    }
+                }
+            }
+
+            // Harvest the source
+            if (runTask) {
+                this.creep.run();
+            }
+        }
     }
 
     public static required(cluster: MyCluster): number {

@@ -111,7 +111,7 @@ export class MyCluster {
             this.hasSpawns = true;
             for (let o of structures) {
                 if (!this.spawns[o.id]) {
-                    this.spawns[o.id] = new MySpawn(o.id);
+                    this.spawns[o.id] = new MySpawn(<StructureSpawn>o);
                 }
 
                 // Record the left-most spawn as the origin

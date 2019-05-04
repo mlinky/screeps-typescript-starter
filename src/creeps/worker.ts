@@ -39,23 +39,27 @@ export class CreepWorker extends MyCreep {
 
             if (s) {
                 this.creep.task = Tasks.build(s);
+                return;
             }
 
+            let targets = gameState.rooms[this.homeRoom].room.find(FIND_STRUCTURES, {
+                filter: object => object.hits < object.hitsMax * 0.8
+            });
 
+            if (targets.length > 0) {
+                this.creep.task = Tasks.repair(targets[0]);
+                return;
+            }
 
+            // Default to upgrade instead, if no work to do
+            this.creep.task = Tasks.upgrade(gameState.rooms[this.homeRoom].controller!.controller);
 
         } else {
             // Go get energy
             // log.info('setting collect');
-            let r: Resource | undefined = this.findDroppedEnergy(gameState.rooms[this.homeRoom])
-
-            if (r) {
-                this.creep.task = Tasks.pickup(r);
-                return;
-            }
+            this.energyPickup();
         }
     }
-
 
     public static required(cluster: MyCluster): number {
         // How many miners required for the cluster
@@ -64,10 +68,30 @@ export class CreepWorker extends MyCreep {
                 case 1: {
                     return 2;
                 }
-                default: {
-                    return 3;
+                case 2: {
+                    return 2;
                 }
-
+                case 3: {
+                    return 4;
+                }
+                case 4: {
+                    return 2;
+                }
+                case 5: {
+                    return 2;
+                }
+                case 6: {
+                    return 2;
+                }
+                case 7: {
+                    return 2;
+                }
+                case 8: {
+                    return 2;
+                }
+                default: {
+                    return 5;
+                }
             }
         }
         return 1;

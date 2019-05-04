@@ -7,6 +7,8 @@ import { gameState } from "defs";
 
 @profile
 export class CreepUpgrader extends MyCreep {
+    controllerID: string = '';
+    containerID: string = '';
 
     constructor(creep: Creep) {
         super(creep);
@@ -29,19 +31,33 @@ export class CreepUpgrader extends MyCreep {
         // log.info(`Creep energy ${this.creep.carry.energy}`);
         // log.info(`Creep energy ${Game.creeps[this.name].carry.energy}`);
 
+        // Grab container ID
+        if (this.controllerID == '' && gameState.rooms[this.homeRoom].controller) {
+            this.controllerID = gameState.rooms[this.homeRoom].controller!.id;
+        }
+
+        // Grab containerID
+        if (this.containerID == '' && this.controllerID != '' && gameState.rooms[this.homeRoom].controller && gameState.rooms[this.homeRoom].controller!.container) {
+            this.containerID = gameState.rooms[this.homeRoom].controller!.container!.id;
+        }
+
         if (this.creep.carry.energy > 0) {
             // Go do upgrade
-            // log.info('setting upgrade');
-            this.creep.task = Tasks.upgrade(gameState.rooms[this.homeRoom].controller!.controller);
-
+            this.creep.task = Tasks.upgrade(<StructureController>Game.getObjectById(this.controllerID));
         } else {
             // Go get energy
-            // log.info('setting collect');
-            let r: Resource | undefined = this.findDroppedEnergy(gameState.rooms[this.homeRoom])
+            if (this.containerID != '') {
+                let c: StructureContainer = <StructureContainer>Game.getObjectById(this.containerID);
 
-            if (r) {
-                this.creep.task = Tasks.pickup(r);
+                if (c && c.store[RESOURCE_ENERGY] > 0) {
+                    this.creep.task = Tasks.withdraw(c, RESOURCE_ENERGY);
+                    return;
+                }
             }
+
+            // Get energy elsewhere
+            this.energyPickup();
+
         }
     }
 

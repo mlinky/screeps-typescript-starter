@@ -23,6 +23,17 @@ const layout: { [rcl: number]: Layout } = {
             'container': { 'pos': [{ x: 0, y: -1 }] }
         }
 
+    },
+    3: {
+        'rcl': '3',
+        'structs': {
+            'spawn': { 'pos': [{ x: 0, y: 0 }] },
+            'extension': {
+                'pos': [{ x: -1, y: -1 }, { x: -1, y: -2 }, { x: -2, y: 0 }, { x: -1, y: 1 }, { x: -1, y: 2 }, { x: -2, y: -2 }, { x: -3, y: -1 }, { x: -3, y: 0 }, { x: -3, y: 1 }, { x: -2, y: 2 }]
+            },
+            'container': { 'pos': [{ x: 0, y: -1 }] },
+            'tower': { 'pos': [{ x: 1, y: 0 }] }
+        }
     }
 }
 
@@ -63,6 +74,10 @@ export abstract class RoomPlanner {
                     }
                     case 'container': {
                         RoomPlanner.checkPos(room, cluster, p, STRUCTURE_CONTAINER);
+                        break;
+                    }
+                    case 'tower': {
+                        RoomPlanner.checkPos(room, cluster, p, STRUCTURE_TOWER);
                         break;
                     }
                     default: {
