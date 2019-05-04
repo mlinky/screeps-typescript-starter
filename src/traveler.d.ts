@@ -55,8 +55,8 @@ interface Creep {
 }
 
 interface CreepMemory {
-    _trav: any;
-    _travel: any;
+    _trav?: any;
+    _travel?: any;
 }
 
 interface RoomMemory {

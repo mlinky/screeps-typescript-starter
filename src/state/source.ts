@@ -2,6 +2,8 @@ import { MyDefault } from "./default";
 import { profile } from "profiler/decorator";
 import { map, locationDetails } from "./map";
 import { log } from "log/log";
+import { gameState } from "defs";
+import { TaskHarvest } from "creep-tasks/TaskInstances/task_harvest";
 
 const _DEBUG_SOURCES = false;
 
@@ -31,10 +33,11 @@ export class MySource extends MyDefault {
 
     private updateSurroundings(): void {
         // Grab surroundings
-        let surroundings: { [position: number]: locationDetails } = map.lookAround(this.source.pos);
+        let surroundings: locationDetails[] = map.lookAround(this.source.pos);
+        let containerPending: boolean = false;
 
         // Inspect surroundings
-        for (let s of Object.values(surroundings)) {
+        for (let s of surroundings) {
             for (let l of s.results) {
                 switch (l.type) {
                     case LOOK_TERRAIN: {
@@ -47,15 +50,57 @@ export class MySource extends MyDefault {
                     }
 
                     case LOOK_STRUCTURES: {
+                        // Have we found the container?
                         if (l.structure && l.structure.structureType == STRUCTURE_CONTAINER) {
                             this.container = <StructureContainer>Game.getObjectById(l.structure.id);
                         }
 
                         break;
                     }
+
+                    case LOOK_CONSTRUCTION_SITES: {
+                        // Is this the container construction site
+                        if (l.constructionSite && l.constructionSite.structureType == STRUCTURE_CONTAINER) {
+                            containerPending = true;
+                        }
+                    }
                 }
             }
         }
+
+        if (!this.container && !containerPending) {
+            // Need to place a container
+            let bestPos: RoomPosition | undefined = map.findClosestConstructionPos(gameState.clusters[this.roomName].origin!, surroundings)
+
+            if (bestPos) {
+                // We found a 'best' location
+                Game.rooms[this.roomName].createConstructionSite(bestPos.x, bestPos.y, STRUCTURE_CONTAINER)
+            }
+        }
+    }
+
+    public updateContainers(): boolean {
+        // Grab surroundings
+
+        if (this.container) {
+            // Already got a container!!
+            return false;
+        }
+
+        let surroundings: locationDetails[] = map.lookAround(this.source.pos);
+
+        for (let s of surroundings) {
+            for (let l of s.results) {
+                if (l.type == LOOK_CONSTRUCTION_SITES) {
+                    if (l.structure && l.structure.structureType == STRUCTURE_CONTAINER) {
+                        this.container = <StructureContainer>Game.getObjectById(l.structure.id);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
     public check(): void {
@@ -63,10 +108,6 @@ export class MySource extends MyDefault {
         if (_DEBUG_SOURCES) {
             log.debug(`Room: ${this.roomName}, Source: ${this.source.id}, Container: ${(this.container ? this.container.id : 'undefined')}, Mining spots: ${this.miningSpots.length}, Workparts: ${this.workParts}`);
         }
-
-
-
-
     }
 }
 
@@ -78,5 +119,4 @@ export class MiningSpot {
     constructor(x: number, y: number, room: string) {
         this.pos = new RoomPosition(x, y, room);
     }
-
 }

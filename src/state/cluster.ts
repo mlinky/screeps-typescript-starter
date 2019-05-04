@@ -1,5 +1,4 @@
 import { MyRoom } from "./room";
-import { MyController } from "./controller";
 import { MySpawn } from "./spawn";
 import { MyExtension } from "./extension";
 import { MyTower } from "./tower";
@@ -7,28 +6,32 @@ import { MyLab } from "./lab";
 import { MyLink } from "./link";
 import { profile } from "profiler/decorator";
 import { CreepRequest, RequestPriority } from "creeps/creepRequest";
-import { log } from "log/log";
 import { gameState } from "defs";
+import { Task } from "creep-tasks/Task";
+import { CreepMiner } from "creeps/miner";
+import { CreepHauler } from "creeps/hauler";
+import { CreepUpgrader } from "creeps/upgrader";
+import { checkRefresh, _REFRESH } from "utils/refresh";
+import { CreepWorker } from "creeps/worker";
+import { RoomPlanner } from "utils/roomPlanner";
+import { MyWall } from "./wall";
+import { MyRampart } from "./ramparts";
 
 const Roles = ['miner', 'hauler', 'worker', 'upgrader']
 
-const _REFRESH = {
-    miner: 100,
-    upgrader: 100,
-    worker: 100,
-    hauler: 100
-};
-
 @profile
 export class MyCluster {
+
     clusterName: string;
+    origin?: RoomPosition;
 
     spawns: { [spawnID: string]: MySpawn } = {};
     extensions: { [extensionID: string]: MyExtension } = {};
     towers: { [towerID: string]: MyTower } = {};
     labs: { [labID: string]: MyLab } = {};
     links: { [linkID: string]: MyLink } = {};
-
+    walls: { [sourceID: string]: MyWall } = {};
+    ramparts: { [sourceID: string]: MyRampart } = {};
     creepRequests: CreepRequest[] = [];
 
     hasSpawns: boolean = false;
@@ -36,6 +39,7 @@ export class MyCluster {
     _creepsRequired: { [role: string]: number } = {}
     creepsAvailable: { [role: string]: number } = {}
     creepsRequested: { [role: string]: number } = {}
+    tasks: { [digest: string]: Task } = {};
 
     initialised: boolean = false;
     firstTick: boolean = true;
@@ -59,11 +63,13 @@ export class MyCluster {
 
         // Init room objects
         this.initCounts();
-        initSpawns();
-        initExtensions();
-        initTowers();
-        initLabs();
-        initLinks();
+        this.updateSpawns();
+        this.updateExtensions();
+        this.updateTowers();
+        this.updateLabs();
+        this.updateLinks();
+        this.updateRamparts();
+        this.updateWalls();
 
         // Get a list of rooms for this cluster
         let roomList = _.filter(gameState.rooms, (room) => room.clusterName = this.clusterName);
@@ -77,83 +83,136 @@ export class MyCluster {
 
         return;
 
-        function initSpawns(): void {
-
-            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_SPAWN }
-            });
-
-            if (structures && structures.length > 0) {
-                cluster.hasSpawns = true;
-                for (let o of structures) {
-                    cluster.spawns[o.id] = new MySpawn(o.id);
-                }
-
-            }
-
-        }
-
-        function initExtensions(): void {
-
-            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_EXTENSION }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    cluster.extensions[o.id] = new MyExtension(o.id);
-                }
-
-            }
-
-        }
-
-        function initTowers(): void {
-
-            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_TOWER }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    cluster.towers[o.id] = new MyTower(o.id);
-                }
-
-            }
-
-        }
-
-        function initLabs(): void {
-
-            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_LAB }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    cluster.labs[o.id] = new MyLab(o.id);
-                }
-
-            }
-
-        }
-
-        function initLinks(): void {
-
-            const structures = Game.rooms[cluster.clusterName].find(FIND_MY_STRUCTURES, {
-                filter: { structureType: STRUCTURE_LINK }
-            });
-
-            if (structures && structures.length > 0) {
-                for (let o of structures) {
-                    cluster.links[o.id] = new MyLink(o.id);
-                }
-
-            }
-
-        }
-
     };
+
+    //#region update_code
+    // Update object details
+    public updateExtensions() {
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_EXTENSION }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.extensions[o.id]) {
+                    this.extensions[o.id] = new MyExtension(o.id);
+                }
+            }
+        }
+    }
+
+    public updateSpawns() {
+
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_SPAWN }
+        });
+
+        if (structures && structures.length > 0) {
+            this.hasSpawns = true;
+            for (let o of structures) {
+                if (!this.spawns[o.id]) {
+                    this.spawns[o.id] = new MySpawn(<StructureSpawn>o);
+                }
+
+                // Record the left-most spawn as the origin
+                if (!this.origin) {
+                    this.origin = o.pos;
+                } else if (o.pos.x < this.origin.x) {
+                    this.origin = o.pos;
+                }
+            }
+        }
+    }
+
+    public updateLinks() {
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_LINK }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.links[o.id]) {
+                    this.links[o.id] = new MyLink(o.id);
+                }
+            }
+        }
+    }
+
+    public updateWalls() {
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_WALL }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.walls[o.id]) {
+                    this.walls[o.id] = new MyWall(o.id);
+                }
+            }
+        }
+    }
+
+    public updateRamparts() {
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_RAMPART }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                this.ramparts[o.id] = new MyRampart(o.id);
+            }
+        }
+    }
+
+    public updateStorage() {
+        throw new Error("Method not implemented.");
+    }
+
+    public updateTowers() {
+
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_TOWER }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.towers[o.id]) {
+                    this.towers[o.id] = new MyTower(o.id);
+                }
+            }
+        }
+    }
+
+    public updateObserver() {
+        throw new Error("Method not implemented.");
+    }
+
+    public updatePowerSpawn() {
+        throw new Error("Method not implemented.");
+    }
+
+    public updateLabs() {
+        const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
+            filter: { structureType: STRUCTURE_LAB }
+        });
+
+        if (structures && structures.length > 0) {
+            for (let o of structures) {
+                if (!this.labs[o.id]) {
+                    this.labs[o.id] = new MyLab(o.id);
+                }
+            }
+        }
+    }
+
+    public updateTerminal() {
+        throw new Error("Method not implemented.");
+    }
+
+    public updateNuker() {
+        throw new Error("Method not implemented.");
+    }
+    //#endregion update_code
 
     // Check the cluster at the start of the run loop
     public check(): void {
@@ -167,6 +226,10 @@ export class MyCluster {
 
         this.checkSpawns();
         this.checkCreeps();
+
+        if (checkRefresh(_REFRESH.roomPlanner)) {
+            RoomPlanner.planRoom(this)
+        }
     }
 
     // Run cluster acions at the end of a run loop
@@ -248,7 +311,13 @@ export class MyCluster {
         for (let s in this.spawns) {
             let spawn: StructureSpawn | null = Game.getObjectById(s);
 
-            if (spawn && !spawn.spawning && spawn.room.energyAvailable >= 300) {
+            if (spawn && spawn.spawning && spawn.spawning.remainingTime == 1) {
+                // Spawn is nearly complete - add the creep ready for action
+                if (!Game.creeps[spawn.spawning.name].added) {
+                    gameState.addCreep(Game.creeps[spawn.spawning.name]);
+                    Game.creeps[spawn.spawning.name].added = true;
+                }
+            } else if (spawn && spawn.room.energyAvailable >= 300) {
                 // Spawn is valid and not active
                 this.canSpawn = true;
             }
@@ -262,22 +331,22 @@ export class MyCluster {
 
             switch (role) {
                 case 'miner': {
-                    if (Game.time % _REFRESH.miner) {
+                    if (checkRefresh(_REFRESH.miner)) {
                         updateRequired = true;
                     }
                 }
                 case 'upgrader': {
-                    if (Game.time % _REFRESH.upgrader) {
+                    if (checkRefresh(_REFRESH.upgrader)) {
                         updateRequired = true;
                     }
                 }
                 case 'hauler': {
-                    if (Game.time % _REFRESH.hauler) {
+                    if (checkRefresh(_REFRESH.hauler)) {
                         updateRequired = true;
                     }
                 }
                 case 'worker': {
-                    if (Game.time % _REFRESH.worker) {
+                    if (checkRefresh(_REFRESH.worker)) {
                         updateRequired = true;
                     }
                 }
@@ -299,10 +368,24 @@ export class MyCluster {
 
         switch (role) {
             case 'miner': {
-                this._creepsRequired[role] = 1;
+                this._creepsRequired[role] = CreepMiner.required(this);
+                break;
+            }
+            case 'hauler': {
+                this._creepsRequired[role] = CreepHauler.required(this);
+                break;
+            }
+            case 'worker': {
+                this._creepsRequired[role] = CreepWorker.required(this);
+                break;
+            }
+            case 'upgrader': {
+                this._creepsRequired[role] = CreepUpgrader.required(this);
+                break;
             }
             default: {
                 this._creepsRequired[role] = 1;
+                break;
             }
         }
     }

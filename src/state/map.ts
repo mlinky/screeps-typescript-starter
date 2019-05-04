@@ -1,25 +1,64 @@
 import { log } from "log/log";
+import { gameState } from "defs";
 
 export abstract class map {
 
-    static lookAround(pos: RoomPosition): { [position: number]: locationDetails } {
+    static lookAround(pos: RoomPosition, range: number = 1): locationDetails[] {
 
         //let result: { [position: number]: LookAtResult<LookConstant>[] } = {};
-        let result: { [position: number]: locationDetails } = {};
+        let result: locationDetails[] = [];
+        let resultCount: number = 0;
 
-        // Inspect each spot in turn
-        // 0 1 2
-        // 3   4
-        // 5 6 7
-        let posAdj = [[-1, -1], [0, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [0, 1], [1, 1]];
-
-        for (let i = 0; i < 8; i++) {
-            // log.info(`Inspecting x:${pos.x + posAdj[i][0]}, y:${pos.y + posAdj[i][1]}, room:${pos.roomName}`);
-            let lookPos: RoomPosition = new RoomPosition(pos.x + posAdj[i][0], pos.y + posAdj[i][1], pos.roomName);
-            result[i] = new locationDetails(pos.x + posAdj[i][0], pos.y + posAdj[i][1], pos.roomName, lookPos.look());
+        for (let y = pos.y - range; y <= pos.y + range; y++) {
+            for (let x = pos.x - range; x <= pos.x + range; x++) {
+                let lookPos: RoomPosition = new RoomPosition(x, y, pos.roomName);
+                result.push(new locationDetails(x, y, pos.roomName, lookPos.look()));
+            }
         }
 
         return result;
+    }
+
+    static findClosestConstructionPos(origin: RoomPosition, locs: locationDetails[], range: number = 1): RoomPosition | undefined {
+        let best: PathFinderPath | null = null;
+        let bestPos: RoomPosition;
+
+        for (let s of locs) {
+            let searchHere: boolean = true;
+
+            for (let l of s.results) {
+                switch (l.type) {
+                    case LOOK_STRUCTURES: {
+                        searchHere = false;
+                        break;
+                    }
+                    case LOOK_TERRAIN: {
+                        if (l.terrain == 'wall') {
+                            searchHere = false;
+                            break;
+                        }
+                    }
+                }
+                if (!searchHere) { break; };
+            }
+
+            if (!searchHere) { continue; };
+
+            let lookPos: RoomPosition = new RoomPosition(s.x, s.y, s.room);
+
+            let p: PathFinderPath = PathFinder.search(lookPos, { pos: origin, range: range });
+
+            if (!best || best.cost > p.cost) {
+                best = p;
+                bestPos = lookPos;
+            }
+        }
+
+        if (best) {
+            return bestPos!;
+        } else {
+            return;
+        }
     }
 
 }

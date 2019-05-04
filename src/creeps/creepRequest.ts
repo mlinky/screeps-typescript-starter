@@ -1,4 +1,10 @@
+import { Roles, Setups } from './setups';
 import { profile } from '../profiler/decorator';
+import { CreepSetup } from './creepSetup';
+import { gameState } from 'defs';
+import { log } from 'log/log';
+
+const _DEBUG_SPAWN: boolean = false;
 
 export enum RequestPriority {
     low,
@@ -33,34 +39,50 @@ export class CreepRequest {
 
         let n = this.creepRole + Game.time;
 
-        switch (s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: this.spawnRoom, workRoom: this.workRoom } })) {
-            case OK:
-                return true;
-            case ERR_NOT_OWNER:
-                console.log('Failed to spawn ' + this.creepRole + ' - ERR_NOT_OWNER')
-                return false;
-            case ERR_NAME_EXISTS:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_NAME_EXISTS')
-                return false;
-            case ERR_BUSY:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_BUSY')
-                return false;
-            case ERR_NOT_ENOUGH_ENERGY:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_NOT_ENOUGH_ENERGY')
-                return false;
-            case ERR_INVALID_ARGS:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_INVALID_ARGS')
-                return false;
-            case ERR_RCL_NOT_ENOUGH:
-                console.log('Failed to spawn creep ' + this.creepRole + ' - ERR_RCL_NOT_ENOUGH')
-                return false;
-            default:
-                return false;
+        let e: ScreepsReturnCode = s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: this.spawnRoom, workRoom: this.workRoom } });
+
+        if (e == OK) {
+            return true;
+        } else {
+            this.spawnError(e, f);
+            return false;
         }
+    }
+
+    private spawnError(e: ScreepsReturnCode, f: BodyPartConstant[]) {
+
+        switch (e) {
+            case OK:
+                return;
+            case ERR_NOT_OWNER:
+                log.debug(`Failed to spawn ${this.creepRole} - ERR_NOT_OWNER`)
+                break;
+            case ERR_NAME_EXISTS:
+                log.debug(`Failed to spawn creep ${this.creepRole} - ERR_NAME_EXISTS`)
+                break;
+            case ERR_BUSY:
+                log.debug(`Failed to spawn creep ${this.creepRole} - ERR_BUSY`)
+                break;
+            case ERR_NOT_ENOUGH_ENERGY:
+                log.debug(`Failed to spawn creep ${this.creepRole} - ERR_NOT_ENOUGH_ENERGY`)
+                break;
+            case ERR_INVALID_ARGS:
+                log.debug(`Failed to spawn creep ${this.creepRole} - ERR_INVALID_ARGS`)
+                break;
+            case ERR_RCL_NOT_ENOUGH:
+                log.debug(`Failed to spawn creep ${this.creepRole} - ERR_RCL_NOT_ENOUGH`)
+                break;
+            default:
+                break;
+        }
+
+        log.debug(`Body parts ${f}`, _DEBUG_SPAWN);
+
+        return;
 
     }
 
-    private creepFeatures(room: Room) {
+    private creepFeatures(room: Room): BodyPartConstant[] {
 
         // WORK             100
         // MOVE             50
@@ -70,37 +92,37 @@ export class CreepRequest {
         // HEAL             200
         // TOUGH            10
         // CLAIM            600
+        let s: CreepSetup;
+        let e: number = room.energyCapacityAvailable;
 
         switch (this.creepRole) {
             case 'hauler':
-                if (room.energyAvailable <= 400) {
-                    return [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE]
-                } else if (room.energyAvailable <= 450) {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-                } else if (room.energyAvailable <= 500) {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE]
-                } else if (room.energyAvailable <= 600) {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
-                } else {
-                    return [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE]
+                if (gameState.clusters[this.spawnRoom].creepsAvailable['hauler'] == 0) {
+                    e = room.energyAvailable;
                 }
+                s = Setups.transporters.default;
+                break;
+
             case 'miner':
-                if (room.energyAvailable <= 450) {
-                    return [WORK, WORK, CARRY, MOVE];
-                } else if (room.energyAvailable <= 550) {
-                    return [WORK, WORK, WORK, CARRY, CARRY, MOVE];
-                } else if (room.energyAvailable <= 650) {
-                    return [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
-                } else {
-                    return [WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE];
-                }
+                s = Setups.drones.miners.default;
+                break;
+
             case 'worker':
+                s = Setups.workers.default;
+                break;
+
             case 'upgrader':
+                s = Setups.upgraders.default;
+                break;
+
             default:
-                return [WORK, WORK, CARRY, MOVE];
+                throw new Error("Method not implemented.");
 
         }
 
+        return s.generateBody(e);
+
     }
+
 
 }
