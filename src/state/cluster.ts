@@ -16,8 +16,7 @@ import { CreepWorker } from "creeps/worker";
 import { RoomPlanner } from "utils/roomPlanner";
 import { MyWall } from "./wall";
 import { MyRampart } from "./ramparts";
-
-const Roles = ['miner', 'hauler', 'worker', 'upgrader']
+import { Roles } from "creeps/setups";
 
 @profile
 export class MyCluster {
@@ -218,7 +217,7 @@ export class MyCluster {
     public check(): void {
         // Handle the first tick
         if (this.firstTick) {
-            for (let r of Roles) {
+            for (let r in Roles) {
                 this.updateRequired(r);
             }
             this.firstTick = false;
@@ -271,7 +270,7 @@ export class MyCluster {
         // Only check for creep requirements if the room can spawn
         if (this.canSpawn) {
             // Check what we have vs what we need
-            for (let r of Roles) {
+            for (let r in Roles) {
                 checkRole(this, r);
             }
         }
@@ -286,7 +285,7 @@ export class MyCluster {
 
                     if (cluster.creepsAvailable[role] + cluster.creepsRequested[role] == 0) {
                         // No creeps of this type found or requested
-                        if (role == 'miner') {
+                        if (role == 'drone') {
                             priority = RequestPriority.urgent;
                         } else {
                             priority = RequestPriority.high;
@@ -330,8 +329,8 @@ export class MyCluster {
             let updateRequired: boolean = false;
 
             switch (role) {
-                case 'miner': {
-                    if (checkRefresh(_REFRESH.miner)) {
+                case 'drone': {
+                    if (checkRefresh(_REFRESH.drone)) {
                         updateRequired = true;
                     }
                 }
@@ -340,8 +339,8 @@ export class MyCluster {
                         updateRequired = true;
                     }
                 }
-                case 'hauler': {
-                    if (checkRefresh(_REFRESH.hauler)) {
+                case 'transporter': {
+                    if (checkRefresh(_REFRESH.transporter)) {
                         updateRequired = true;
                     }
                 }
@@ -350,7 +349,6 @@ export class MyCluster {
                         updateRequired = true;
                     }
                 }
-
             }
 
             if (updateRequired) {
@@ -367,11 +365,11 @@ export class MyCluster {
         this.checkDefined(role);
 
         switch (role) {
-            case 'miner': {
+            case 'drone': {
                 this._creepsRequired[role] = CreepMiner.required(this);
                 break;
             }
-            case 'hauler': {
+            case 'transporter': {
                 this._creepsRequired[role] = CreepHauler.required(this);
                 break;
             }
@@ -384,7 +382,7 @@ export class MyCluster {
                 break;
             }
             default: {
-                this._creepsRequired[role] = 1;
+                this._creepsRequired[role] = 0;
                 break;
             }
         }

@@ -77,11 +77,11 @@ export class GameState {
     addCreep(creep: Creep, updateAvailable?: boolean) {
 
         switch (creep.role) {
-            case 'miner': {
+            case 'drone': {
                 this.creeps[creep.name] = new CreepMiner(creep);
                 break;
             }
-            case 'hauler': {
+            case 'transporter': {
                 this.creeps[creep.name] = new CreepHauler(creep);
                 break;
             }

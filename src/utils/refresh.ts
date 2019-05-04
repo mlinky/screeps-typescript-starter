@@ -1,9 +1,9 @@
 export const _REFRESH = {
     // Creeps
-    miner: 100,
+    drone: 100,
     upgrader: 100,
     worker: 100,
-    hauler: 100,
+    transporter: 100,
 
     // Room objects
     droppedResource: 25,

@@ -96,14 +96,14 @@ export class CreepRequest {
         let e: number = room.energyCapacityAvailable;
 
         switch (this.creepRole) {
-            case 'hauler':
-                if (gameState.clusters[this.spawnRoom].creepsAvailable['hauler'] == 0) {
+            case 'transporter':
+                if (gameState.clusters[this.spawnRoom].creepsAvailable['transporter'] == 0) {
                     e = room.energyAvailable;
                 }
                 s = Setups.transporters.default;
                 break;
 
-            case 'miner':
+            case 'drone':
                 s = Setups.drones.miners.default;
                 break;
 
@@ -116,7 +116,7 @@ export class CreepRequest {
                 break;
 
             default:
-                throw new Error("Method not implemented.");
+                throw new Error(`Method not implemented ${this.creepRole}`);
 
         }
 

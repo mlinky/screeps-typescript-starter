@@ -12,7 +12,7 @@ export const Roles = {
     manager: 'manager',
     queen: 'queen',
     scout: 'scout',
-    transport: 'transport',
+    transporter: 'transporter',
     worker: 'worker',
     upgrader: 'upgrader',
     // Combat roles
@@ -139,12 +139,12 @@ export const Setups = {
 
     transporters: {
 
-        default: new CreepSetup(Roles.transport, {
+        default: new CreepSetup(Roles.transporter, {
             pattern: [CARRY, CARRY, MOVE],
             sizeLimit: Infinity,
         }),
 
-        early: new CreepSetup(Roles.transport, {
+        early: new CreepSetup(Roles.transporter, {
             pattern: [CARRY, MOVE],
             sizeLimit: Infinity,
         }),
