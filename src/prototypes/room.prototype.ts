@@ -1,5 +1,5 @@
+import { _REFRESH, checkRefresh } from 'utils/refresh';
 import { profile } from '../profiler/decorator';
-import { checkRefresh, _REFRESH } from 'utils/refresh';
 
 export { }
 
@@ -24,7 +24,7 @@ declare global {
 }
 
 Object.defineProperty(Room.prototype, 'constructionSites', {
-    get: function () {
+    get() {
         // If we dont have the value stored locally
         // TODO - cache construction sites
         if (!this._constructionSites) {
@@ -34,13 +34,13 @@ Object.defineProperty(Room.prototype, 'constructionSites', {
         return this._constructionSites;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'sources', {
-    get: function () {
+    get() {
         // If we dont have the value stored locally
         // TODO - cache sources
         if (!this._sources) {
@@ -50,13 +50,13 @@ Object.defineProperty(Room.prototype, 'sources', {
         return this._sources;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'spawns', {
-    get: function (): StructureSpawn[] | null {
+    get(): StructureSpawn[] | null {
         // If we dont have the value stored locally
         // TODO - cache spawns
         if (!this._spawns) {
@@ -66,30 +66,30 @@ Object.defineProperty(Room.prototype, 'spawns', {
         return this._spawns;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'towers', {
-    get: function (): StructureSpawn[] | null {
+    get(): StructureSpawn[] | null {
         // If we dont have the value stored locally
         // TODO - cache towers
         if (!this._towers) {
             // Get the towers and store them locally
-            this._towers = this.find(FIND_STRUCTURES, { filter: (s: Structure) => s.structureType == STRUCTURE_TOWER });
+            this._towers = this.find(FIND_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_TOWER });
         }
         return this._towers;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'availableSpawn', {
-    get: function (): StructureSpawn | undefined {
-        for (let spawn of this.spawns) {
+    get(): StructureSpawn | undefined {
+        for (const spawn of this.spawns) {
             if (!spawn.spawning) {
                 return spawn;
             }
@@ -97,13 +97,13 @@ Object.defineProperty(Room.prototype, 'availableSpawn', {
         return;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'droppedResource', {
-    get: function (): Resource[] | null {
+    get(): Resource[] | null {
         // If we dont have the value stored locally
         if (!this._droppedResource || checkRefresh(_REFRESH.droppedResource)) {
             // Get the towers and store them locally
@@ -112,8 +112,8 @@ Object.defineProperty(Room.prototype, 'droppedResource', {
         return this._droppedResource;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
@@ -244,7 +244,7 @@ Room.prototype.canSpawn = function (): boolean {
         return false;
     }
 
-    for (let spawn of this.spawns) {
+    for (const spawn of this.spawns) {
         if (!spawn.spawning) {
             return true;
         }

@@ -2,7 +2,7 @@ import { profile } from "profiler/decorator";
 
 @profile
 export class MyDefault {
-    id: string;
+    public id: string;
 
     constructor(id: string) {
         this.id = id;

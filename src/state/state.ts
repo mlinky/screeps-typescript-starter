@@ -1,35 +1,38 @@
-import '../prototypes/creep.prototype';
-import { log } from "log/log";
-import { MyCreep } from "../creeps/creep";
-import { MyCluster } from "./cluster";
-import { MyRoom } from './room';
-import { Perfmon } from "utils/perfmon";
-import { profile } from "profiler/decorator";
-import { CreepMiner } from 'creeps/miner';
 import { CreepHauler } from 'creeps/hauler';
-import { CreepWorker } from 'creeps/worker';
+import { CreepMiner } from 'creeps/miner';
 import { CreepUpgrader } from 'creeps/upgrader';
+import { CreepWorker } from 'creeps/worker';
+import { log } from "log/log";
+import { profile } from "profiler/decorator";
+import { Perfmon } from "utils/perfmon";
+import { _REFRESH, checkRefresh } from 'utils/refresh';
+import { MyCreep } from "../creeps/creep";
+import '../prototypes/creep.prototype';
+import { MyCluster } from "./cluster";
+import { Flags, MyFlag } from './flag';
+import { MyRoom } from './room';
 
 // State.ts - core gamestate to store on the heap
 const _DEBUG_GAMESTATE: boolean = false;
 
 @profile
 export class GameState {
-    creeps: { [creepName: string]: MyCreep } = {};
-    clusters: { [clusterHub: string]: MyCluster } = {};
-    rooms: { [roomName: string]: MyRoom } = {};
-    perfmon: Perfmon;
+    public creeps: { [creepName: string]: MyCreep } = {};
+    public clusters: { [clusterHub: string]: MyCluster } = {};
+    public rooms: { [roomName: string]: MyRoom } = {};
+    public flags: { [flagName: string]: MyFlag } = {};
+    public perfmon: Perfmon;
 
-    constructionSites: number = 0;
+    public constructionSites: number = 0;
 
-    initialised: boolean;
+    public initialised: boolean;
 
     constructor() {
         this.initialised = false;
         this.perfmon = new Perfmon();
     }
 
-    initState(): void {
+    public initState(): void {
 
         if (_DEBUG_GAMESTATE) {
             // Start a performance timer
@@ -52,7 +55,7 @@ export class GameState {
 
     }
 
-    initCreeps() {
+    public initCreeps() {
 
         if (_DEBUG_GAMESTATE) {
             // Start a performance timer
@@ -74,7 +77,7 @@ export class GameState {
         }
     }
 
-    addCreep(creep: Creep, updateAvailable?: boolean) {
+    public addCreep(creep: Creep, updateAvailable?: boolean) {
 
         switch (creep.role) {
             case 'drone': {
@@ -108,7 +111,7 @@ export class GameState {
 
     }
 
-    deleteCreep(c: string) {
+    public deleteCreep(c: string) {
         // Reduce available count
         log.info(`Creep removed ${c} - ${this.creeps[c].role} - homeRoom: ${this.creeps[c].homeRoom} - workRoom: ${this.creeps[c].workRoom}`);
 
@@ -119,20 +122,20 @@ export class GameState {
 
     }
 
-    initClusters() {
+    public initClusters() {
 
         if (_DEBUG_GAMESTATE) {
             // Start a performance timer
             this.perfmon.start();
         }
 
-        let pass2Rooms: Room[] = [];
+        const pass2Rooms: Room[] = [];
         this.clusters = {};
 
         for (const r of Object.values(Game.rooms)) {
 
             // In case room is undefined
-            if (r == undefined) {
+            if (r === undefined) {
                 continue;
             }
 
@@ -166,38 +169,41 @@ export class GameState {
         }
     }
 
-    run() {
+    public run() {
 
         // Tidy up creeps
-        for (let c in this.creeps) {
+        for (const c in this.creeps) {
             if (!(c in Game.creeps)) {
                 // Creep is dead - remove from collection
                 this.deleteCreep(c);
             }
         }
 
+        // Check flags
+        Flags.check();
+
         // Check cluster
-        for (let c in this.clusters) {
+        for (const c in this.clusters) {
             this.clusters[c].check();
         }
 
         // Check rooms
-        for (let r in this.rooms) {
+        for (const r in this.rooms) {
             this.rooms[r].check();
         }
 
         // Run cluster
-        for (let c in this.clusters) {
+        for (const c in this.clusters) {
             this.clusters[c].run();
         }
 
         // Run rooms
-        for (let r in this.rooms) {
+        for (const r in this.rooms) {
             this.rooms[r].run();
         }
 
         // Run creeps
-        for (let c in this.creeps) {
+        for (const c in this.creeps) {
             this.creeps[c].run();
         }
 

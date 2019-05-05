@@ -1,15 +1,15 @@
-import { gameState } from "defs";
-import { MyCreep } from "creeps/creep";
-import { MySource } from "state/source";
-import { profile } from "profiler/decorator";
-import { log } from "log/log";
-import { MyCluster } from "state/cluster";
-import { Tasks } from "creep-tasks/Tasks";
 import { harvestTargetType } from "creep-tasks/TaskInstances/task_harvest";
+import { Tasks } from "creep-tasks/Tasks";
+import { MyCreep } from "creeps/creep";
+import { gameState } from "defs";
+import { log } from "log/log";
+import { profile } from "profiler/decorator";
+import { MyCluster } from "state/cluster";
+import { MySource } from "state/source";
 
 @profile
 export class CreepMiner extends MyCreep {
-    onContainer: boolean = false;
+    public onContainer: boolean = false;
 
     constructor(creep: Creep) {
         super(creep);
@@ -17,13 +17,13 @@ export class CreepMiner extends MyCreep {
 
     public run() {
 
-        //log.info('Miner running');
+        // log.info('Miner running');
 
         if (!this.creep.task) {
-            for (let s of Object.values(gameState.rooms[this.workRoom].sources)) {
-                let r: RoomObject | null = Game.getObjectById(s.id);
-                if (r && r.targetedBy.length == 0) {
-                    this.creep.task = Tasks.harvest(<harvestTargetType>r);
+            for (const s of Object.values(gameState.rooms[this.workRoom].sources)) {
+                const r: RoomObject | null = Game.getObjectById(s.id);
+                if (r && r.targetedBy.length === 0) {
+                    this.creep.task = Tasks.harvest(r as harvestTargetType);
                 }
             }
         }
@@ -33,10 +33,10 @@ export class CreepMiner extends MyCreep {
             let runTask: boolean = true;
 
             if (!this.onContainer) {
-                let s: Source | undefined = <Source>this.creep.task.target;
+                const s: Source | undefined = this.creep.task.target as Source;
 
                 if (s && gameState.rooms[this.workRoom].sources[s.id] && gameState.rooms[this.workRoom].sources[s.id].container) {
-                    let containerPos: RoomPosition = gameState.rooms[this.workRoom].sources[s.id].container!.pos;
+                    const containerPos: RoomPosition = gameState.rooms[this.workRoom].sources[s.id].container!.pos;
 
                     // Is the creep on the container?
                     if (this.creep.pos.isEqualTo(containerPos.x, containerPos.y)) {
@@ -62,7 +62,7 @@ export class CreepMiner extends MyCreep {
         // Just do the number of sources
         required = Object.keys(gameState.rooms[cluster.clusterName].sources).length;
 
-        //log.info(`Miners required:${required}`);
+        // log.info(`Miners required:${required}`);
 
         return required;
     }

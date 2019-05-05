@@ -1,6 +1,6 @@
-import { MyCluster } from "state/cluster";
-import { log } from "log/log";
 import { gameState } from "defs";
+import { log } from "log/log";
+import { MyCluster } from "state/cluster";
 
 // Copy of o4kapuk layout
 interface Layout {
@@ -19,6 +19,7 @@ const layout: { [rcl: number]: Layout } = {
         'rcl': '2',
         'structs': {
             'spawn': { 'pos': [{ x: 0, y: 0 }] },
+            // tslint:disable-next-line:object-literal-sort-keys
             'extension': { 'pos': [{ x: -1, y: -1 }, { x: -1, y: -2 }, { x: -2, y: 0 }, { x: -1, y: 1 }, { x: -1, y: 2 }] },
             'container': { 'pos': [{ x: 0, y: -1 }] }
         }
@@ -28,21 +29,38 @@ const layout: { [rcl: number]: Layout } = {
         'rcl': '3',
         'structs': {
             'spawn': { 'pos': [{ x: 0, y: 0 }] },
+            // tslint:disable-next-line:object-literal-sort-keys
             'extension': {
                 'pos': [{ x: -1, y: -1 }, { x: -1, y: -2 }, { x: -2, y: 0 }, { x: -1, y: 1 }, { x: -1, y: 2 }, { x: -2, y: -2 }, { x: -3, y: -1 }, { x: -3, y: 0 }, { x: -3, y: 1 }, { x: -2, y: 2 }]
             },
             'container': { 'pos': [{ x: 0, y: -1 }] },
             'tower': { 'pos': [{ x: 1, y: 0 }] }
         }
+    },
+    4: {
+        'rcl': '4',
+        'structs': {
+            'spawn': { 'pos': [{ x: 0, y: 0 }] },
+            // tslint:disable-next-line:object-literal-sort-keys
+            'extension': {
+                'pos': [{ x: -1, y: -1 }, { x: -1, y: -2 }, { x: -2, y: 0 }, { x: -1, y: 1 }, { x: -1, y: 2 }, { x: -2, y: -2 }, { x: -3, y: -1 }, { x: -3, y: 0 }, { x: -3, y: 1 }, { x: -2, y: 2 },
+                { x: -4, y: -3 }, { x: -4, y: -2 }, { x: -4, y: 2 }, { x: -4, y: 3 }, { x: -2, y: -3 }, { x: -1, y: -4 }, { x: -1, y: -3 }, { x: -2, y: 3 }, { x: -1, y: 4 }, { x: -1, y: 3 }]
+            },
+            'container': { 'pos': [{ x: 0, y: -1 }] },
+            'tower': { 'pos': [{ x: 1, y: 0 }] },
+            'road': { 'pos': [{ x: -1, y: 0 }, { x: -2, y: -1 }, { x: -3, y: -2 }, { x: -2, y: 1 }, { x: -3, y: 2 }, { x: -4, y: -1 }, { x: -4, y: 0 }, { x: -4, y: 1 }, { x: -3, y: -3 }, { x: -2, y: -4 }, { x: -1, y: -5 }, { x: 0, y: -5 }, { x: 1, y: -4 }, { x: 2, y: -3 }, { x: 1, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 3 }, { x: 1, y: 4 }, { x: 0, y: 5 }, { x: -1, y: 5 }, { x: -2, y: 4 }, { x: -3, y: 3 }] },
+            'storage': { 'pos': [{ x: 2, y: 0 }] }
+        }
     }
 }
+
 
 export abstract class RoomPlanner {
 
     public static planRoom(cluster: MyCluster) {
 
         let rcl: number;
-        let room: Room = Game.rooms[cluster.clusterName];
+        const room: Room = Game.rooms[cluster.clusterName];
 
         if (!cluster.origin) {
             log.error('RoomPlanner called without cluster origin set up');
@@ -55,8 +73,8 @@ export abstract class RoomPlanner {
             return;
         }
 
-        for (let s in layout[rcl].structs) {
-            for (let p of layout[rcl].structs[s].pos) {
+        for (const s in layout[rcl].structs) {
+            for (const p of layout[rcl].structs[s].pos) {
 
                 // Exit if we already have 50 construction sites
                 if (gameState.constructionSites > 50) {
@@ -80,6 +98,14 @@ export abstract class RoomPlanner {
                         RoomPlanner.checkPos(room, cluster, p, STRUCTURE_TOWER);
                         break;
                     }
+                    case 'road': {
+                        RoomPlanner.checkPos(room, cluster, p, STRUCTURE_ROAD);
+                        break;
+                    }
+                    case 'storage': {
+                        RoomPlanner.checkPos(room, cluster, p, STRUCTURE_STORAGE);
+                        break;
+                    }
                     default: {
                         log.error(`${s} not handled in RoomPlanner`);
                         break;
@@ -93,32 +119,32 @@ export abstract class RoomPlanner {
 
     private static checkPos(room: Room, cluster: MyCluster, coord: Coord, sType: BuildableStructureConstant): void {
         // Look for structures at the location
-        let checkX: number = cluster.origin!.x + coord.x;
-        let checkY: number = cluster.origin!.y + coord.y;
-        let r = room.lookForAt(LOOK_STRUCTURES, checkX, checkY);
+        const checkX: number = cluster.origin!.x + coord.x;
+        const checkY: number = cluster.origin!.y + coord.y;
+        const r = room.lookForAt(LOOK_STRUCTURES, checkX, checkY);
 
         // Check the results
-        for (let e of r) {
-            if (e.structureType == sType) {
+        for (const e of r) {
+            if (e.structureType === sType) {
                 // The correct structure is already there
                 return;
             }
         }
 
-        let c = room.lookForAt(LOOK_CONSTRUCTION_SITES, checkX, checkY);
+        const c = room.lookForAt(LOOK_CONSTRUCTION_SITES, checkX, checkY);
 
-        for (let e of c) {
-            if (e.structureType == sType) {
+        for (const e of c) {
+            if (e.structureType === sType) {
                 // The correct structure is being built
                 return;
             }
         }
 
-        let pos: RoomPosition = new RoomPosition(checkX, checkY, room.name);
+        const pos: RoomPosition = new RoomPosition(checkX, checkY, room.name);
 
-        let result = pos.createConstructionSite(sType);
+        const result = pos.createConstructionSite(sType);
 
-        if (result != OK) {
+        if (result !== OK) {
             log.error(`Failed to build${sType}: ${result}`);
             return;
         }

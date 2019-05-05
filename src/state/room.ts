@@ -1,29 +1,29 @@
-import { MyController } from "./controller";
-import { MySource } from "./source";
-import { MyContainer } from "./container";
-import { MyContructionSite } from "./constructionSite";
-import { MyRoad } from "./road";
-import { profile } from "profiler/decorator";
-import { MyHostileCreep } from "./hostilerCreep";
 import { gameState } from "defs";
+import { profile } from "profiler/decorator";
+import { MyContructionSite } from "./constructionSite";
+import { MyContainer } from "./container";
+import { MyController } from "./controller";
+import { MyHostileCreep } from "./hostilerCreep";
+import { MyRoad } from "./road";
+import { MySource } from "./source";
 
 @profile
 export class MyRoom {
-    room: Room;
-    roomName: string;
-    clusterName: string;
-    clusterHub: boolean;
-    controller?: MyController;
-    sources: { [sourceID: string]: MySource } = {};
-    containers: { [sourceID: string]: MyContainer } = {};
-    constructionSites: { [sourceID: string]: MyContructionSite } = {};
-    roads: { [sourceID: string]: MyRoad } = {};
+    public room: Room;
+    public roomName: string;
+    public clusterName: string;
+    public clusterHub: boolean;
+    public controller?: MyController;
+    public sources: { [sourceID: string]: MySource } = {};
+    public containers: { [sourceID: string]: MyContainer } = {};
+    public constructionSites: { [sourceID: string]: MyContructionSite } = {};
+    public roads: { [sourceID: string]: MyRoad } = {};
 
-    hostiles: { [creepID: string]: MyHostileCreep } = {};
+    public hostiles: { [creepID: string]: MyHostileCreep } = {};
 
-    terrain: RoomTerrain;
+    public terrain: RoomTerrain;
 
-    initialised: boolean;
+    public initialised: boolean;
 
     constructor(room: Room, clusterName: string, clusterHub: boolean = false) {
         this.room = room;
@@ -44,7 +44,7 @@ export class MyRoom {
         //   gather road information
         //   gather wall information
         //   gather ramparts information
-        let room: MyRoom = this;
+        const room: MyRoom = this;
 
         initController();
         initSources();
@@ -58,7 +58,7 @@ export class MyRoom {
 
         function initController(): void {
             // set controller ID
-            let controller: StructureController | undefined = Game.rooms[room.roomName].controller;
+            const controller: StructureController | undefined = Game.rooms[room.roomName].controller;
 
             if (controller) {
                 room.controller = new MyController(controller);
@@ -70,7 +70,7 @@ export class MyRoom {
             const sources = Game.rooms[room.roomName].find(FIND_SOURCES);
 
             if (sources && sources.length > 0) {
-                for (let o of sources) {
+                for (const o of sources) {
                     room.sources[o.id] = new MySource(o);
                 }
             }
@@ -81,7 +81,7 @@ export class MyRoom {
             const sites = Game.rooms[room.roomName].find(FIND_MY_CONSTRUCTION_SITES);
 
             if (sites && sites.length > 0) {
-                for (let o of sites) {
+                for (const o of sites) {
                     room.constructionSites[o.id] = new MyContructionSite(o);
                 }
             }
@@ -95,7 +95,7 @@ export class MyRoom {
         return;
 
         function checkSources(room: MyRoom): void {
-            for (let s in room.sources) {
+            for (const s in room.sources) {
                 room.sources[s].check();
             }
         }
@@ -110,14 +110,14 @@ export class MyRoom {
         const targets = Game.rooms[this.roomName].find(FIND_HOSTILE_CREEPS);
 
         // Store current hostile creeps
-        for (let t of targets) {
+        for (const t of targets) {
             this.hostiles[t.id] = new MyHostileCreep(t);
         }
     }
 
     public constructionComplete(id: string) {
 
-        //gameState.clusters[this.homeRoom].newStructure(gameState.rooms[this.workRoom].constructionSites[i].type);
+        // gameState.clusters[this.homeRoom].newStructure(gameState.rooms[this.workRoom].constructionSites[i].type);
         switch (this.constructionSites[id].type) {
             case "extension": {
                 gameState.clusters[this.clusterName].updateExtensions();
@@ -188,7 +188,7 @@ export class MyRoom {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.roads[o.id]) {
                     this.roads[o.id] = new MyRoad(o.id);
                 }
@@ -207,7 +207,7 @@ export class MyRoom {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.containers[o.id]) {
                     this.containers[o.id] = new MyContainer(o.id);
                 }
@@ -215,7 +215,7 @@ export class MyRoom {
         }
 
         // Update containers now
-        for (let s of Object.values(this.sources)) {
+        for (const s of Object.values(this.sources)) {
             if (s.updateContainers()) {
                 break;
             }

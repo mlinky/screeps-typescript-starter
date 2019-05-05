@@ -5,23 +5,24 @@ import { CreepSetup } from './CreepSetup';
  */
 export const Roles = {
     // Civilian roles
+    claim: 'infestor',
     drone: 'drone',
     filler: 'filler',
-    claim: 'infestor',
-    pioneer: 'pioneer',
     manager: 'manager',
+    pioneer: 'pioneer',
     queen: 'queen',
     scout: 'scout',
     transporter: 'transporter',
-    worker: 'worker',
     upgrader: 'upgrader',
+    worker: 'worker',
+
     // Combat roles
+    dismantler: 'lurker',
     guardMelee: 'broodling',
+    healer: 'transfuser',
     // guardRanged: 'mutalisk',
     melee: 'zergling',
     ranged: 'hydralisk',
-    healer: 'transfuser',
-    dismantler: 'lurker',
 };
 
 /**
@@ -182,8 +183,7 @@ export const Setups = {
 };
 
 
-/**
- * This object contains default body setups for various types of combat-related creeps*/
+/* This object contains default body setups for various types of combat-related creeps*/
 export const CombatSetups = {
 
 	/**

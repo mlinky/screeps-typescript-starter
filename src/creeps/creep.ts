@@ -1,18 +1,20 @@
-import '../prototypes/creep.prototype';
-import { profile } from "profiler/decorator";
+import { Tasks } from 'creep-tasks/Tasks';
+import { gameState } from 'defs';
 import { log } from 'log/log';
+import { roomManager } from 'managers/roomManager';
+import { profile } from "profiler/decorator";
 import { MyCluster } from 'state/cluster';
 import { MyRoom } from 'state/room';
-import { gameState } from 'defs';
-import { Tasks } from 'creep-tasks/Tasks';
-import { roomManager } from 'managers/roomManager';
+import '../prototypes/creep.prototype';
+
+const _DEBUG_CREEP: boolean = false;
 
 @profile
 export class MyCreep {
-    name: string;
-    role: string;
-    homeRoom: string;
-    workRoom: string;
+    public name: string;
+    public role: string;
+    public homeRoom: string;
+    public workRoom: string;
 
     constructor(creep: Creep) {
         this.name = creep.name;
@@ -25,25 +27,24 @@ export class MyCreep {
         return Game.creeps[this.name];
     }
 
-    check() {
+    public check() {
+        log.debug('creep.check not implemented');
+    }
 
+    public run() {
+
+        // log.info('Base creep running');
 
     }
 
-    run() {
-
-        //log.info('Base creep running');
-
-    }
-
-    required(cluster: MyCluster) {
-
+    public required(cluster: MyCluster) {
+        log.debug('base creep required call not implemented');
     }
 
     private findDroppedEnergy(room: MyRoom): Resource | undefined {
 
-        for (let r of room.room.droppedResource) {
-            if (r.resourceType == RESOURCE_ENERGY && r.amount >= this.creep.carryCapacity) {
+        for (const r of room.room.droppedResource) {
+            if (r.resourceType === RESOURCE_ENERGY && r.amount >= this.creep.carryCapacity) {
                 return r;
             }
         }
@@ -52,36 +53,34 @@ export class MyCreep {
 
     }
 
-    energyPickup() {
+    public energyPickup() {
 
-        let r: Resource | undefined = this.findDroppedEnergy(gameState.rooms[this.workRoom])
+        const r: Resource | undefined = this.findDroppedEnergy(gameState.rooms[this.workRoom])
 
         if (r && r.amount > 0) {
             this.creep.task = Tasks.pickup(r);
             return;
         }
 
-        let c: StructureContainer;
-
-        for (let s of Object.values(gameState.rooms[this.workRoom].sources)) {
+        for (const s of Object.values(gameState.rooms[this.workRoom].sources)) {
 
             if (s.container) {
-                let c: StructureContainer = <StructureContainer>Game.getObjectById(s.container.id)
+                const c: StructureContainer = Game.getObjectById(s.container.id) as StructureContainer
                 if (c.store[RESOURCE_ENERGY] > 0) {
                     // Try and target a container that has content available
-                    //log.info(`Container targetted by ${c.targetedBy.length} creeps`);
+                    // log.info(`Container targetted by ${c.targetedBy.length} creeps`);
                     if (c.store[RESOURCE_ENERGY] - (c.targetedBy.length * 500) > 0) {
-                        this.creep.task = Tasks.withdraw(s.container, RESOURCE_ENERGY);
+                        this.creep.task = Tasks.withdraw(c, RESOURCE_ENERGY);
                     }
                 }
             }
         }
     }
 
-    findConstructionSite(room: MyRoom): ConstructionSite | undefined {
+    public findConstructionSite(room: MyRoom): ConstructionSite | undefined {
 
-        for (let i in gameState.rooms[this.workRoom].constructionSites) {
-            let o = <ConstructionSite>Game.getObjectById(i);
+        for (const i in gameState.rooms[this.workRoom].constructionSites) {
+            const o = Game.getObjectById(i) as ConstructionSite;
 
             if (o) {
                 // Object is valid
@@ -94,22 +93,22 @@ export class MyCreep {
         return;
     }
 
-    findEnergyDestination(room: MyRoom): StructureExtension | StructureSpawn | StructureStorage | StructureTower | StructureContainer | undefined {
+    public findEnergyDestination(room: MyRoom): StructureExtension | StructureSpawn | StructureStorage | StructureTower | StructureContainer | undefined {
 
-        let c: MyCluster = gameState.clusters[room.roomName];
+        const c: MyCluster = gameState.clusters[room.roomName];
 
         if (c) {
             // Spawns first
-            for (let s of Object.values(c.spawns)) {
+            for (const spawn of Object.values(c.spawns)) {
                 // Check energy content
-                if (Game.spawns[s.name] && (Game.spawns[s.name].energy < Game.spawns[s.name].energyCapacity)) {
-                    return Game.spawns[s.name];
+                if (Game.spawns[spawn.name] && (Game.spawns[spawn.name].energy < Game.spawns[spawn.name].energyCapacity)) {
+                    return Game.spawns[spawn.name];
                 }
             }
 
             // Extensions next
-            for (let e of Object.values(c.extensions)) {
-                let ex: StructureExtension | null = Game.getObjectById(e.id);
+            for (const e of Object.values(c.extensions)) {
+                const ex: StructureExtension | null = Game.getObjectById(e.id);
 
                 if (ex && (ex.energy < ex.energyCapacity)) {
                     return ex;
@@ -118,8 +117,8 @@ export class MyCreep {
 
             // Towers if RCL > 3
             if (room.controller && room.controller.controller.level >= 3) {
-                for (let t of Object.values(c.towers)) {
-                    let tower: StructureTower | null = Game.getObjectById(t.id);
+                for (const t of Object.values(c.towers)) {
+                    const tower: StructureTower | null = Game.getObjectById(t.id);
 
                     if (tower && (tower.energy < tower.energyCapacity)) {
                         return tower;
@@ -127,24 +126,27 @@ export class MyCreep {
                 }
             }
 
-            // Controller container?
-            // Top it up if there's under 500
-            if (room.controller && room.controller.container) {
-                let c: StructureContainer | null = Game.getObjectById(room.controller.container.id);
-
-                if (c && _.sum(c.store) < (c.storeCapacity - 500)) {
-                    return c;
-                }
-            }
-
             // Storage?
-            let s: StructureStorage | undefined = Game.rooms[room.roomName].storage;
+            const s: StructureStorage | undefined = Game.rooms[room.roomName].storage;
 
             if (s) {
+                log.debug(`Creep ${this.name} filling storage`, _DEBUG_CREEP);
                 if (_.sum(s.store) < s.storeCapacity) {
                     return s;
                 }
             }
+
+            // Controller container?
+            // Top it up if there's under 500
+            if (room.controller && room.controller.container) {
+                const container: StructureContainer | null = Game.getObjectById(room.controller.container.id);
+
+                if (container && _.sum(container.store) < (container.storeCapacity - 500)) {
+                    return container;
+                }
+            }
+
+
         }
         return;
     }

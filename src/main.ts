@@ -1,26 +1,26 @@
 'use strict';
 
-import 'prototypes/room.prototype';
 import 'creep-tasks/prototypes'
-import { ErrorMapper } from "utils/ErrorMapper";
-import { memoryManager } from "managers/memoryManager";
-import { USE_PROFILER } from './settings';
-import profiler from './profiler/screeps-profiler';
+import { gameState } from "defs";
 import { MyConsole } from 'log/console'
 import { log } from "log/log";
-import { gameState } from "defs";
+import { memoryManager } from "managers/memoryManager";
+import 'prototypes/room.prototype';
+import { ErrorMapper } from "utils/ErrorMapper";
+import profiler from './profiler/screeps-profiler';
+import { USE_PROFILER } from './settings';
 
 function main(): void {
 
-  //let used = Game.cpu.getUsed();
+  // let used = Game.cpu.getUsed();
 
   memoryManager.run();
 
-  //used = reportCPU('memoryManager', used);
+  // used = reportCPU('memoryManager', used);
 
   gameState.run();
 
-  //used = reportCPU('gameState', used);
+  // used = reportCPU('gameState', used);
 
   // roomManager.run();
 
@@ -36,13 +36,14 @@ function main(): void {
 //   profiler.wrap(main);
 // });
 
+// tslint:disable-next-line:only-arrow-functions
 export const loop = function () {
   profiler.wrap(main);
 };
 
 // This gets run on each global reset
 function onGlobalReset(): void {
-  if (USE_PROFILER) profiler.enable();
+  if (USE_PROFILER) { profiler.enable(); }
 
   MyConsole.init();
   gameState.initState();

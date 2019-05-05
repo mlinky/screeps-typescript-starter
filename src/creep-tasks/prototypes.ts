@@ -2,6 +2,7 @@
 
 import { initializeTask } from './utilities/initializer';
 import { TargetCache } from './utilities/caching';
+import { gameState } from 'defs';
 
 Object.defineProperty(Creep.prototype, 'task', {
 	get() {
@@ -104,7 +105,19 @@ Object.defineProperty(RoomPosition.prototype, 'neighbors', {
 
 RoomPosition.prototype.isPassible = function (ignoreCreeps = false): boolean {
 	// Is terrain passable?
-	if (Game.map.getTerrainAt(this) == 'wall') return false;
+	if (gameState.rooms[this.roomName]) {
+		// Use the cached terrain object
+		if (gameState.rooms[this.roomName].terrain.get(this.x, this.y) == TERRAIN_MASK_WALL) {
+			return false;
+		}
+	} else {
+		// Get the terrain object
+		let t: RoomTerrain = Game.map.getRoomTerrain(this.roomName)
+		if (t.get(this.x, this.y) == TERRAIN_MASK_WALL) {
+			return false;
+		}
+	}
+
 	if (this.isVisible) {
 		// Are there creeps?
 		if (ignoreCreeps == false && this.lookFor(LOOK_CREEPS).length > 0) return false;

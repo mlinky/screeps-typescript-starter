@@ -1,9 +1,9 @@
-import { MyDefault } from "./default";
 import { profile } from "profiler/decorator";
+import { MyDefault } from "./default";
 
 @profile
 export class MySpawn extends MyDefault {
-    name: string;
+    public name: string;
 
     constructor(s: StructureSpawn) {
         super(s.id);

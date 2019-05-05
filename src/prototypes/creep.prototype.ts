@@ -1,6 +1,6 @@
-import { profile } from '../profiler/decorator';
 import { log } from 'log/log';
 import { Traveler } from 'utils/traveler';
+import { profile } from '../profiler/decorator';
 
 export { }
 
@@ -39,7 +39,7 @@ Creep.prototype.travelTo = function (destination: RoomPosition | { pos: RoomPosi
 
 
 Creep.prototype.selectEnergySource = function (includeSource: boolean): boolean {
-    var energySource;
+    let energySource;
 
     this.resetDestination();
 
@@ -48,7 +48,7 @@ Creep.prototype.selectEnergySource = function (includeSource: boolean): boolean 
         filter: r => (r.amount > this.carryCapacity)
     });
 
-    if (energySource != undefined) {
+    if (energySource) {
         // TODO - claim portion of dropped resource
         this.pickupSource = energySource;
         return true;
@@ -56,22 +56,22 @@ Creep.prototype.selectEnergySource = function (includeSource: boolean): boolean 
 
     // Select a container that is totally full first
     energySource = this.pos.findClosestByPath(FIND_STRUCTURES, {
-        filter: s => ((s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_STORAGE)
+        filter: s => ((s.structureType === STRUCTURE_CONTAINER || s.structureType === STRUCTURE_STORAGE)
             && s.store[RESOURCE_ENERGY] >= s.storeCapacity * 0.8)
     });
 
-    if (energySource != undefined && energySource instanceof StructureContainer || energySource instanceof StructureStorage || energySource instanceof Tombstone) {
+    if (energySource !== undefined && energySource instanceof StructureContainer || energySource instanceof StructureStorage || energySource instanceof Tombstone) {
         this.energySource = energySource;
         return true;
     }
 
     // See if there is a container with enough energy
     energySource = this.pos.findClosestByPath(FIND_STRUCTURES, {
-        filter: s => ((s.structureType == STRUCTURE_CONTAINER || s.structureType == STRUCTURE_STORAGE)
+        filter: s => ((s.structureType === STRUCTURE_CONTAINER || s.structureType === STRUCTURE_STORAGE)
             && s.store[RESOURCE_ENERGY] >= this.carryCapacity)
     });
 
-    if (energySource != undefined && energySource instanceof StructureContainer || energySource instanceof StructureStorage || energySource instanceof Tombstone) {
+    if (energySource !== undefined && energySource instanceof StructureContainer || energySource instanceof StructureStorage || energySource instanceof Tombstone) {
         this.energySource = energySource;
         return true;
     }
@@ -79,7 +79,7 @@ Creep.prototype.selectEnergySource = function (includeSource: boolean): boolean 
     if (includeSource) {
         energySource = this.pos.findClosestByPath(FIND_SOURCES_ACTIVE);
 
-        if (energySource != undefined && energySource instanceof Source) {
+        if (energySource !== undefined && energySource instanceof Source) {
             this.harvestSource = energySource;
             return true;
         }
@@ -89,26 +89,26 @@ Creep.prototype.selectEnergySource = function (includeSource: boolean): boolean 
 };
 
 Creep.prototype.selectEnergyDestination = function (): boolean {
-    var structure;
+    let structure;
 
     this.resetDestination();
 
     structure = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-        filter: (s) => ((s.structureType == STRUCTURE_SPAWN
-            || s.structureType == STRUCTURE_EXTENSION)
+        filter: (s) => ((s.structureType === STRUCTURE_SPAWN
+            || s.structureType === STRUCTURE_EXTENSION)
             && s.energy < s.energyCapacity)
     });
 
-    if (structure != undefined && (structure instanceof StructureExtension || structure instanceof StructureSpawn || structure instanceof StructureStorage || structure instanceof StructureTower)) {
+    if (structure !== undefined && (structure instanceof StructureExtension || structure instanceof StructureSpawn || structure instanceof StructureStorage || structure instanceof StructureTower)) {
         this.energyDestination = structure;
         return true;
     }
 
     structure = this.pos.findClosestByPath(FIND_MY_STRUCTURES, {
-        filter: (s) => (s.structureType == STRUCTURE_TOWER && (s.energy < (s.energyCapacity * 0.8)))
+        filter: (s) => (s.structureType === STRUCTURE_TOWER && (s.energy < (s.energyCapacity * 0.8)))
     });
 
-    if (structure != undefined && (structure instanceof StructureExtension || structure instanceof StructureSpawn || structure instanceof StructureStorage || structure instanceof StructureTower)) {
+    if (structure !== undefined && (structure instanceof StructureExtension || structure instanceof StructureSpawn || structure instanceof StructureStorage || structure instanceof StructureTower)) {
         this.energyDestination = structure;
         return true;
     }
@@ -119,7 +119,7 @@ Creep.prototype.selectEnergyDestination = function (): boolean {
 
 Creep.prototype.collectEnergy = function (): void {
 
-    if (this.pickupSource != undefined) {
+    if (this.pickupSource !== undefined) {
         switch (this.pickup(this.pickupSource)) {
             case ERR_BUSY:
                 // Just wait
@@ -144,10 +144,10 @@ Creep.prototype.collectEnergy = function (): void {
 
     }
 
-    if (this.harvestSource != undefined) {
+    if (this.harvestSource !== undefined) {
         switch (this.harvest(this.harvestSource)) {
             case OK:
-                if (_.sum(this.carry) == this.carryCapacity) {
+                if (_.sum(this.carry) === this.carryCapacity) {
                     this.resetDestination();
                     this.collecting = false;
                 }
@@ -176,14 +176,14 @@ Creep.prototype.collectEnergy = function (): void {
 
     }
 
-    if (this.energySource != undefined) {
-        var eReturn = this.withdraw(this.energySource, RESOURCE_ENERGY);
+    if (this.energySource !== undefined) {
+        const eReturn = this.withdraw(this.energySource, RESOURCE_ENERGY);
         switch (eReturn) {
             case ERR_FULL:
             case OK:
                 this.resetDestination();
 
-                if (_.sum(this.carry) == this.carryCapacity) {
+                if (_.sum(this.carry) === this.carryCapacity) {
                     this.collecting = false;
                 }
                 return;
@@ -207,8 +207,8 @@ Creep.prototype.collectEnergy = function (): void {
 
 Creep.prototype.deliverEnergy = function (): void {
 
-    if (this.energyDestination != undefined) {
-        var eReturn = this.transfer(this.energyDestination, RESOURCE_ENERGY);
+    if (this.energyDestination !== undefined) {
+        const eReturn = this.transfer(this.energyDestination, RESOURCE_ENERGY);
         switch (eReturn) {
             case ERR_FULL:
                 // Destination was full - try another destination on the next tick
@@ -220,7 +220,7 @@ Creep.prototype.deliverEnergy = function (): void {
                 this.resetDestination();
 
                 // Start collecting if we have no energy left
-                if (this.carry.energy == 0) {
+                if (this.carry.energy === 0) {
                     this.collecting = true;
                 }
                 return;
@@ -255,7 +255,7 @@ Creep.prototype.deliverEnergy = function (): void {
 
 Creep.prototype.doUpgradeController = function (): void {
 
-    if (this.room.controller != undefined) {
+    if (this.room.controller !== undefined) {
         switch (this.upgradeController(this.room.controller)) {
             case ERR_NOT_ENOUGH_RESOURCES:
                 this.resetDestination();
@@ -271,7 +271,7 @@ Creep.prototype.doUpgradeController = function (): void {
                 break;
 
             case ERR_NOT_IN_RANGE:
-                //this.moveTo(this.room.controller);
+                // this.moveTo(this.room.controller);
                 this.travelTo(this.room.controller);
                 break;
 
@@ -286,7 +286,7 @@ Creep.prototype.doUpgradeController = function (): void {
 
 Creep.prototype.doBuild = function (): void {
 
-    if (this.room.constructionSites != undefined && this.room.constructionSites.length > 0) {
+    if (this.room.constructionSites !== undefined && this.room.constructionSites.length > 0) {
         switch (this.build(this.room.constructionSites[0])) {
             case OK:
                 break;
@@ -299,7 +299,7 @@ Creep.prototype.doBuild = function (): void {
                 break;
 
             case ERR_NOT_IN_RANGE:
-                //this.moveTo(this.room.constructionSites[0]);
+                // this.moveTo(this.room.constructionSites[0]);
                 this.travelTo(this.room.constructionSites[0]);
                 break;
 
@@ -323,7 +323,7 @@ Creep.prototype.resetDestination = function (): void {
 };
 
 Object.defineProperty(Creep.prototype, 'added', {
-    get: function (): boolean {
+    get(): boolean {
         // If we dont have the value stored locally
         if (!this._added) {
             // Set the value
@@ -332,17 +332,17 @@ Object.defineProperty(Creep.prototype, 'added', {
         return this._added;
     },
 
-    set: function (value: boolean) {
+    set(value: boolean) {
         this._added = value;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'role', {
-    get: function () {
+    get() {
         // If we dont have the value stored locally
         if (!this._role) {
             // Get the role from memory and store locally
@@ -351,13 +351,13 @@ Object.defineProperty(Creep.prototype, 'role', {
         return this._role;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'homeRoom', {
-    get: function () {
+    get() {
         // If we dont have the value stored locally
         if (!this._homeRoom) {
             // Get the room from memory and store locally
@@ -366,13 +366,13 @@ Object.defineProperty(Creep.prototype, 'homeRoom', {
         return this._homeRoom;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'workRoom', {
-    get: function () {
+    get() {
         // If we dont have the value stored locally
         if (!this._workRoom) {
             // Get the room from memory and store locally
@@ -381,13 +381,13 @@ Object.defineProperty(Creep.prototype, 'workRoom', {
         return this._workRoom;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'source', {
-    get: function (): Source | undefined {
+    get(): Source | undefined {
         // If we dont have the value stored locally
         if (!this._source) {
             // Get the source from memory and store locally
@@ -397,9 +397,9 @@ Object.defineProperty(Creep.prototype, 'source', {
         return this._source;
     },
 
-    set: function (source: Source | undefined) {
+    set(source: Source | undefined) {
         // Set the memory pointer
-        if (source == undefined) {
+        if (source === undefined) {
             this.memory.source = 0;
         } else {
             this.memory.source = source.id;
@@ -410,13 +410,13 @@ Object.defineProperty(Creep.prototype, 'source', {
 
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'container', {
-    get: function (): StructureContainer | undefined {
+    get(): StructureContainer | undefined {
         // If we dont have the value stored locally
         if (!this._container) {
             // Get the container from memory and store locally
@@ -427,9 +427,9 @@ Object.defineProperty(Creep.prototype, 'container', {
 
     },
 
-    set: function (container: StructureContainer | undefined) {
+    set(container: StructureContainer | undefined) {
         // Set the memory pointer
-        if (container == undefined) {
+        if (container === undefined) {
             this.memory.container = 0;
         } else {
             this.memory.container = container.id;
@@ -440,13 +440,13 @@ Object.defineProperty(Creep.prototype, 'container', {
 
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'collecting', {
-    get: function (): boolean {
+    get(): boolean {
         // If we dont have the value stored locally
         if (!this._collecting) {
             // Get the value from memory and store locally
@@ -455,18 +455,18 @@ Object.defineProperty(Creep.prototype, 'collecting', {
         return this._collecting;
     },
 
-    set: function (collecting: boolean): void {
+    set(collecting: boolean): void {
         this._collecting = collecting;
         this.memory.collecting = collecting;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'repairing', {
-    get: function (): boolean {
+    get(): boolean {
         // If we dont have the value stored locally
         if (!this._repairing) {
             // Get the value from memory and store locally
@@ -475,18 +475,18 @@ Object.defineProperty(Creep.prototype, 'repairing', {
         return this._repairing;
     },
 
-    set: function (repairing: boolean): void {
+    set(repairing: boolean): void {
         this._repairing = repairing;
         this.memory.repairing = repairing;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'pickupSource', {
-    get: function (): Resource | undefined {
+    get(): Resource | undefined {
         // If we dont have the value stored locally
         if (!this._pickupSource) {
             // Get the value from memory and store locally
@@ -495,22 +495,22 @@ Object.defineProperty(Creep.prototype, 'pickupSource', {
         return this._pickupSource;
     },
 
-    set: function (pickupSource: Resource | undefined): void {
+    set(pickupSource: Resource | undefined): void {
         this._pickupSource = pickupSource;
-        if (pickupSource == undefined) {
+        if (pickupSource === undefined) {
             this.memory.pickupSource = 0;
         } else {
             this.memory.pickupSource = pickupSource.id;
         }
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'harvestSource', {
-    get: function (): Source | undefined {
+    get(): Source | undefined {
         // If we dont have the value stored locally
         if (!this._harvestSource) {
             // Get the value from memory and store locally
@@ -519,22 +519,22 @@ Object.defineProperty(Creep.prototype, 'harvestSource', {
         return this._harvestSource;
     },
 
-    set: function (harvestSource: Source | undefined): void {
+    set(harvestSource: Source | undefined): void {
         this._harvestSource = harvestSource;
-        if (harvestSource == undefined) {
+        if (harvestSource === undefined) {
             this.memory.harvestSource = 0;
         } else {
             this.memory.harvestSource = harvestSource.id;
         }
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'energySource', {
-    get: function (): StructureContainer | StructureStorage | Tombstone | undefined {
+    get(): StructureContainer | StructureStorage | Tombstone | undefined {
         // If we dont have the value stored locally
         if (!this._energySource) {
             // Get the source from memory and store locally
@@ -544,9 +544,9 @@ Object.defineProperty(Creep.prototype, 'energySource', {
         return this._energySource;
     },
 
-    set: function (source: StructureContainer | StructureStorage | Tombstone | undefined) {
+    set(source: StructureContainer | StructureStorage | Tombstone | undefined) {
         // Set the memory pointer
-        if (source == undefined) {
+        if (source === undefined) {
             this.memory.energySource = 0;
         } else {
             this.memory.energySource = source.id;
@@ -556,13 +556,13 @@ Object.defineProperty(Creep.prototype, 'energySource', {
 
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Creep.prototype, 'energyDestination', {
-    get: function (): StructureExtension | StructureSpawn | StructureTower | undefined {
+    get(): StructureExtension | StructureSpawn | StructureTower | undefined {
         // If we dont have the value stored locally
         if (!this._energyDestination) {
             // Get the source from memory and store locally
@@ -572,9 +572,9 @@ Object.defineProperty(Creep.prototype, 'energyDestination', {
         return this._energyDestination;
     },
 
-    set: function (destination: StructureExtension | StructureSpawn | StructureTower | undefined) {
+    set(destination: StructureExtension | StructureSpawn | StructureTower | undefined) {
         // Set the memory pointer
-        if (destination == undefined) {
+        if (destination === undefined) {
             this.memory.energyDestination = 0;
         } else {
             this.memory.energyDestination = destination.id;
@@ -584,8 +584,8 @@ Object.defineProperty(Creep.prototype, 'energyDestination', {
 
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 

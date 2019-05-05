@@ -1,8 +1,8 @@
-import { Roles, Setups } from './setups';
-import { profile } from '../profiler/decorator';
-import { CreepSetup } from './creepSetup';
 import { gameState } from 'defs';
 import { log } from 'log/log';
+import { profile } from '../profiler/decorator';
+import { CreepSetup } from './creepSetup';
+import { Roles, Setups } from './setups';
 
 const _DEBUG_SPAWN: boolean = false;
 
@@ -16,10 +16,10 @@ export enum RequestPriority {
 @profile
 export class CreepRequest {
 
-    spawnRoom: string;
-    workRoom: string;
-    creepRole: string;
-    priority: RequestPriority;
+    public spawnRoom: string;
+    public workRoom: string;
+    public creepRole: string;
+    public priority: RequestPriority;
 
     constructor(spawnRoom: string, workRoom: string, creepRole: string, priority: RequestPriority) {
         this.spawnRoom = spawnRoom;
@@ -35,13 +35,13 @@ export class CreepRequest {
             return false;
         }
 
-        let f = this.creepFeatures(s.room);
+        const f = this.creepFeatures(s.room);
 
-        let n = this.creepRole + Game.time;
+        const n = this.creepRole + Game.time;
 
-        let e: ScreepsReturnCode = s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: this.spawnRoom, workRoom: this.workRoom } });
+        const e: ScreepsReturnCode = s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: this.spawnRoom, workRoom: this.workRoom } });
 
-        if (e == OK) {
+        if (e === OK) {
             return true;
         } else {
             this.spawnError(e, f);
@@ -97,7 +97,7 @@ export class CreepRequest {
 
         switch (this.creepRole) {
             case 'transporter':
-                if (gameState.clusters[this.spawnRoom].creepsAvailable['transporter'] == 0) {
+                if (gameState.clusters[this.spawnRoom].creepsAvailable.transporter === 0) {
                     e = room.energyAvailable;
                 }
                 s = Setups.transporters.default;

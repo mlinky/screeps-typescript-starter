@@ -11,7 +11,7 @@ declare global {
 }
 
 Object.defineProperty(Source.prototype, 'creepID', {
-    get: function (): string {
+    get(): string {
         // If we dont have the value stored locally
         if (!this._creepID) {
             // Get the info from memory and store locally
@@ -20,14 +20,14 @@ Object.defineProperty(Source.prototype, 'creepID', {
         return this._creepID;
     },
 
-    set: function (creepID: string): void {
+    set(creepID: string): void {
         // If we dont have the value stored locally
         _setCreepID(this, creepID);
         this._creepID = creepID;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 

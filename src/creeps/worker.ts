@@ -1,9 +1,9 @@
-import { profile } from "profiler/decorator";
-import { MyCreep } from "creeps/creep";
-import { log } from "log/log";
-import { MyCluster } from "state/cluster";
 import { Tasks } from "creep-tasks/Tasks";
+import { MyCreep } from "creeps/creep";
 import { gameState } from "defs";
+import { log } from "log/log";
+import { profile } from "profiler/decorator";
+import { MyCluster } from "state/cluster";
 
 @profile
 export class CreepWorker extends MyCreep {
@@ -12,9 +12,9 @@ export class CreepWorker extends MyCreep {
         super(creep);
     }
 
-    run() {
+    public run() {
 
-        //log.info('Worker running');
+        // log.info('Worker running');
         if (this.creep.isIdle) {
             this.newTask();
         }
@@ -34,15 +34,15 @@ export class CreepWorker extends MyCreep {
             // Emergency repair
             // Build
             // Normal repair
-            //this.creep.task = Tasks.upgrade(gameState.rooms[this.homeRoom].controller!.controller);
-            let s: ConstructionSite | undefined = this.findConstructionSite(gameState.rooms[this.homeRoom]);
+            // this.creep.task = Tasks.upgrade(gameState.rooms[this.homeRoom].controller!.controller);
+            const s: ConstructionSite | undefined = this.findConstructionSite(gameState.rooms[this.homeRoom]);
 
             if (s) {
                 this.creep.task = Tasks.build(s);
                 return;
             }
 
-            let targets = gameState.rooms[this.homeRoom].room.find(FIND_STRUCTURES, {
+            const targets = gameState.rooms[this.homeRoom].room.find(FIND_STRUCTURES, {
                 filter: object => object.hits < object.hitsMax * 0.8
             });
 
@@ -72,25 +72,39 @@ export class CreepWorker extends MyCreep {
                     return 2;
                 }
                 case 3: {
-                    return 4;
-                }
-                case 4: {
-                    return 2;
-                }
-                case 5: {
-                    return 2;
-                }
-                case 6: {
-                    return 2;
-                }
-                case 7: {
-                    return 2;
-                }
-                case 8: {
                     return 2;
                 }
                 default: {
-                    return 5;
+                    if (!Game.rooms[cluster.clusterName]) {
+                        // No access to the room
+                        return 0;
+                    }
+
+                    if (!Game.rooms[cluster.clusterName].storage) {
+                        // Room has no storage yet - spawn one worker
+                        return 1;
+                    }
+
+                    if (Game.rooms[cluster.clusterName].storage!.store.energy < 100000) {
+                        // Not much storage - only one worker
+                        return 1;
+                    }
+
+                    if (Game.rooms[cluster.clusterName].storage!.store.energy < 400000) {
+                        // Medium storage - two workers
+                        return 2;
+                    }
+
+                    if (Game.rooms[cluster.clusterName].storage!.store.energy < 800000) {
+                        // High storage - three workers
+                        return 3;
+                    }
+
+                    if (Game.rooms[cluster.clusterName].storage!.store.energy > 800000) {
+                        // Surplus storage - three workers
+                        return 3;
+                    }
+
                 }
             }
         }

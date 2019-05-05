@@ -59,21 +59,21 @@ export class Log {
         });
     }
 
-    public error(message: String): undefined {
+    public error(message: string): undefined {
         if (this.level >= LogLevels.ERROR) {
             console.log(message);
         }
         return undefined;
     }
 
-    public warning(message: String): undefined {
+    public warning(message: string): undefined {
         if (this.level >= LogLevels.WARNING) {
             console.log(message);
         }
         return undefined;
     }
 
-    public alert(message: String): undefined {
+    public alert(message: string): undefined {
         if (this.level >= LogLevels.ALERT) {
             console.log(message);
         }
@@ -86,14 +86,14 @@ export class Log {
         return undefined;
     }
 
-    public info(message: String): undefined {
+    public info(message: string): undefined {
         if (this.level >= LogLevels.INFO) {
             console.log(message);
         }
         return undefined;
     }
 
-    public debug(message: String, overrideDebug: boolean = false): undefined {
+    public debug(message: string, overrideDebug: boolean = false): undefined {
         if (overrideDebug || this.level >= LogLevels.DEBUG) {
             console.log(message);
         }

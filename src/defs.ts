@@ -1,3 +1,3 @@
 import { GameState } from 'state/state'
 
-export var gameState = new GameState();
+export let gameState = new GameState();

@@ -1,6 +1,6 @@
 import { profile } from '../profiler/decorator';
 
-export interface bodySetup {
+export interface BodySetup {
     pattern: BodyPartConstant[];			// body pattern to be repeated
     sizeLimit: number;						// maximum number of unit repetitions to make body
     prefix: BodyPartConstant[];				// stuff at beginning of body
@@ -24,43 +24,47 @@ export function patternCost(setup: CreepSetup): number {
 @profile
 export class CreepSetup {
 
-    role: string;
-    bodySetup: bodySetup;
+    public role: string;
+    public bodySetup: BodySetup;
 
-    constructor(roleName: string, bodySetup = {}) {
+    constructor(roleName: string, setup = {}) {
         this.role = roleName;
         // Defaults for a creep setup
-        _.defaults(bodySetup, {
+        _.defaults(setup, {
             pattern: [],
             sizeLimit: Infinity,
+            // tslint:disable-next-line:object-literal-sort-keys
             prefix: [],
             suffix: [],
             proportionalPrefixSuffix: false,
             ordered: true,
         });
-        this.bodySetup = bodySetup as bodySetup;
+        this.bodySetup = setup as BodySetup;
     }
 
 	/* Generate the largest body of a given pattern that is producable from a room,
 	 * subject to limitations from maxRepeats */
-    generateBody(availableEnergy: number): BodyPartConstant[] {
-        let patternCost, patternLength, numRepeats: number;
-        let prefix = this.bodySetup.prefix;
-        let suffix = this.bodySetup.suffix;
+    public generateBody(availableEnergy: number): BodyPartConstant[] {
+        // tslint:disable-next-line:no-shadowed-variable
+        let patternCost:number;
+        let patternLength:number;
+        let numRepeats: number;
+        const prefix = this.bodySetup.prefix;
+        const suffix = this.bodySetup.suffix;
         let body: BodyPartConstant[] = [];
         // calculate repetitions
         if (this.bodySetup.proportionalPrefixSuffix) { // if prefix and suffix are to be kept proportional to body size
             patternCost = bodyCost(prefix) + bodyCost(this.bodySetup.pattern) + bodyCost(suffix);
             patternLength = prefix.length + this.bodySetup.pattern.length + suffix.length;
-            let energyLimit = Math.floor(availableEnergy / patternCost); // max number of repeats room can produce
-            let maxPartLimit = Math.floor(MAX_CREEP_SIZE / patternLength); // max repetitions resulting in <50 parts
+            const energyLimit = Math.floor(availableEnergy / patternCost); // max number of repeats room can produce
+            const maxPartLimit = Math.floor(MAX_CREEP_SIZE / patternLength); // max repetitions resulting in <50 parts
             numRepeats = Math.min(energyLimit, maxPartLimit, this.bodySetup.sizeLimit);
         } else { // if prefix and suffix don't scale
-            let extraCost = bodyCost(prefix) + bodyCost(suffix);
+            const extraCost = bodyCost(prefix) + bodyCost(suffix);
             patternCost = bodyCost(this.bodySetup.pattern);
             patternLength = this.bodySetup.pattern.length;
-            let energyLimit = Math.floor((availableEnergy - extraCost) / patternCost);
-            let maxPartLimit = Math.floor((MAX_CREEP_SIZE - prefix.length - suffix.length) / patternLength);
+            const energyLimit = Math.floor((availableEnergy - extraCost) / patternCost);
+            const maxPartLimit = Math.floor((MAX_CREEP_SIZE - prefix.length - suffix.length) / patternLength);
             numRepeats = Math.min(energyLimit, maxPartLimit, this.bodySetup.sizeLimit);
         }
         // build the body
@@ -73,7 +77,7 @@ export class CreepSetup {
         }
 
         if (this.bodySetup.ordered) { // repeated body pattern
-            for (let part of this.bodySetup.pattern) {
+            for (const part of this.bodySetup.pattern) {
                 for (let i = 0; i < numRepeats; i++) {
                     body.push(part);
                 }
@@ -95,10 +99,10 @@ export class CreepSetup {
         return body;
     }
 
-    getBodyPotential(partType: BodyPartConstant, room: Room): number {
-        let energyCapacity = room.energyCapacityAvailable;
-        let body = this.generateBody(energyCapacity);
-        return _.filter(body, (part: BodyPartConstant) => part == partType).length;
+    public getBodyPotential(partType: BodyPartConstant, room: Room): number {
+        const energyCapacity = room.energyCapacityAvailable;
+        const body = this.generateBody(energyCapacity);
+        return _.filter(body, (part: BodyPartConstant) => part === partType).length;
     }
 
 }
