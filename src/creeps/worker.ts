@@ -35,20 +35,14 @@ export class CreepWorker extends MyCreep {
             // Build
             // Normal repair
             // this.creep.task = Tasks.upgrade(gameState.rooms[this.homeRoom].controller!.controller);
-            const s: ConstructionSite | undefined = this.findConstructionSite(gameState.rooms[this.homeRoom]);
-
-            if (s) {
-                this.creep.task = Tasks.build(s);
+            if (assignTaskInRoom(this, this.workRoom)) {
                 return;
             }
 
-            const targets = gameState.rooms[this.homeRoom].room.find(FIND_STRUCTURES, {
-                filter: object => object.hits < object.hitsMax * 0.8
-            });
-
-            if (targets.length > 0) {
-                this.creep.task = Tasks.repair(targets[0]);
-                return;
+            if (this.workRoom !== this.homeRoom) {
+                if (assignTaskInRoom(this, this.homeRoom)) {
+                    return;
+                }
             }
 
             // Default to upgrade instead, if no work to do
@@ -56,9 +50,39 @@ export class CreepWorker extends MyCreep {
 
         } else {
             // Go get energy
-            // log.info('setting collect');
-            this.energyPickup();
+            this.energyPickup(this.workRoom);
         }
+
+        return;
+
+        function assignTaskInRoom(creep: CreepWorker, room: string): boolean {
+
+            // room not visible
+            if (!gameState.rooms[room] || !Game.rooms[room]) {
+                return false;
+            }
+
+            const s: ConstructionSite | undefined = creep.findConstructionSite(gameState.rooms[room]);
+
+            if (s) {
+                creep.creep.task = Tasks.build(s);
+                return true;
+            }
+
+            // Repair stuff?
+            const targets = Game.rooms[room].find(FIND_STRUCTURES, {
+                filter: object => object.hits < object.hitsMax * 0.8
+            });
+
+            if (targets.length > 0) {
+                creep.creep.task = Tasks.repair(targets[0]);
+                return true;
+            }
+
+            return false;
+
+        }
+
     }
 
     public static required(cluster: MyCluster): number {

@@ -16,7 +16,10 @@ export class MyController extends MyDefault {
         this.controller = controller;
         this.room = controller.room.name;
 
-        this.checkContainer();
+        // Only do a container for cluster hub rooms
+        if (gameState.rooms[this.room].clusterHub) {
+            this.checkContainer();
+        }
 
     }
 

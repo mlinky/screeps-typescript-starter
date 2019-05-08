@@ -6,11 +6,16 @@ import { Roles, Setups } from './setups';
 
 const _DEBUG_SPAWN: boolean = false;
 
-export enum RequestPriority {
-    low,
-    medium,
-    high,
-    urgent
+export const RequestPriority = {
+    1: '1',
+    2: '2',
+    3: '3',
+    4: '4',
+    5: '5',
+    6: '6',
+    7: '7',
+    8: '8',
+    9: '9'
 }
 
 @profile
@@ -19,33 +24,47 @@ export class CreepRequest {
     public spawnRoom: string;
     public workRoom: string;
     public creepRole: string;
-    public priority: RequestPriority;
+    public priority: string;
 
-    constructor(spawnRoom: string, workRoom: string, creepRole: string, priority: RequestPriority) {
+    constructor(spawnRoom: string, workRoom: string, creepRole: string, priority: string) {
         this.spawnRoom = spawnRoom;
         this.workRoom = workRoom;
         this.creepRole = creepRole;
         this.priority = priority;
     }
 
-    public actionRequest(s: StructureSpawn): boolean {
+    public actionRequest(s: StructureSpawn): { result: boolean, creepName: string } {
+
+        return this.spawnRequest(s);
+
+    }
+
+    public testRequest(s: StructureSpawn): boolean {
+
+        const testReturn: { result: boolean, creepName: string } = this.spawnRequest(s, true)
+
+        return testReturn.result;
+
+    }
+
+    private spawnRequest(s: StructureSpawn, dryRun: boolean = false): { result: boolean, creepName: string } {
 
         // Check spawn is valid
         if (_.isUndefined(s)) {
-            return false;
+            return { result: false, creepName: '' };
         }
 
         const f = this.creepFeatures(s.room);
 
         const n = this.creepRole + Game.time;
 
-        const e: ScreepsReturnCode = s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: this.spawnRoom, workRoom: this.workRoom } });
+        const e: ScreepsReturnCode = s.spawnCreep(f, n, { memory: { role: this.creepRole, homeRoom: this.spawnRoom, workRoom: this.workRoom }, dryRun });
 
         if (e === OK) {
-            return true;
+            return { result: true, creepName: n };
         } else {
             this.spawnError(e, f);
-            return false;
+            return { result: false, creepName: '' };
         }
     }
 
@@ -96,23 +115,32 @@ export class CreepRequest {
         let e: number = room.energyCapacityAvailable;
 
         switch (this.creepRole) {
-            case 'transporter':
-                if (gameState.clusters[this.spawnRoom].creepsAvailable.transporter === 0) {
-                    e = room.energyAvailable;
+            case Roles.transporter:
+                // Don't wait for spawn to get filled if we have no transporters in a cluster room
+                if (this.spawnRoom === this.workRoom) {
+                    const creeps = _.filter(gameState.creeps, c => c.role === this.creepRole && c.workRoom === this.workRoom && c.homeRoom === this.workRoom);
+                    if (creeps.length === 0) {
+                        e = room.energyAvailable;
+                    }
                 }
+
                 s = Setups.transporters.default;
                 break;
 
-            case 'drone':
+            case Roles.drone:
                 s = Setups.drones.miners.default;
                 break;
 
-            case 'worker':
+            case Roles.worker:
                 s = Setups.workers.default;
                 break;
 
-            case 'upgrader':
+            case Roles.upgrader:
                 s = Setups.upgraders.default;
+                break;
+
+            case Roles.claim:
+                s = Setups.infestors.reserve;
                 break;
 
             default:
@@ -123,6 +151,5 @@ export class CreepRequest {
         return s.generateBody(e);
 
     }
-
 
 }

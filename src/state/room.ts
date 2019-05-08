@@ -1,5 +1,6 @@
 import { gameState } from "defs";
 import { profile } from "profiler/decorator";
+import { _REFRESH, checkRefresh } from "utils/refresh";
 import { MyContructionSite } from "./constructionSite";
 import { MyContainer } from "./container";
 import { MyController } from "./controller";
@@ -8,8 +9,25 @@ import { MyRoad } from "./road";
 import { MySource } from "./source";
 
 @profile
+export abstract class Rooms {
+
+    public static check() {
+        // Check room
+        for (const r in gameState.rooms) {
+            gameState.rooms[r].check();
+        }
+    }
+
+    public static run() {
+        // Run room
+        for (const r in gameState.rooms) {
+            gameState.rooms[r].run();
+        }
+    }
+}
+
+@profile
 export class MyRoom {
-    public room: Room;
     public roomName: string;
     public clusterName: string;
     public clusterHub: boolean;
@@ -26,7 +44,6 @@ export class MyRoom {
     public initialised: boolean;
 
     constructor(room: Room, clusterName: string, clusterHub: boolean = false) {
-        this.room = room;
         this.clusterName = clusterName;
         this.roomName = room.name;
         this.clusterHub = clusterHub;
@@ -49,7 +66,7 @@ export class MyRoom {
         initController();
         initSources();
         this.updateContainers();
-        initConstructionSites();
+        this.updateConstructionSites();
         this.updateRoads();
 
         this.initialised = true;
@@ -75,21 +92,14 @@ export class MyRoom {
                 }
             }
         }
-
-        function initConstructionSites(): void {
-
-            const sites = Game.rooms[room.roomName].find(FIND_MY_CONSTRUCTION_SITES);
-
-            if (sites && sites.length > 0) {
-                for (const o of sites) {
-                    room.constructionSites[o.id] = new MyContructionSite(o);
-                }
-            }
-        }
-
     }
 
     public check(): void {
+
+        if (checkRefresh(_REFRESH.roomPlanner)) {
+            this.updateConstructionSites();
+        }
+
         checkSources(this);
 
         return;
@@ -102,7 +112,13 @@ export class MyRoom {
     }
 
     public run(): void {
+
+        if (!Game.rooms[this.roomName]) {
+            return;
+        }
+
         this.updateHostiles();
+        this.runVisuals();
 
     }
 
@@ -115,9 +131,41 @@ export class MyRoom {
         }
     }
 
+    private runVisuals() {
+        const room: Room = Game.rooms[this.roomName];
+        let visRow: number = 0;
+        const visCol: number = 0;
+        const census: { [role: string]: number } = {};
+        let count: number = 0;
+        const creeps = _.filter(gameState.creeps, c => c.workRoom === this.roomName);
+
+        for (const c of creeps) {
+            if (census[c.role]) {
+                census[c.role]++;
+            } else {
+                census[c.role] = 1;
+            }
+            count++;
+        }
+
+        placeText(`Sources:    ${Object.keys(gameState.rooms[this.roomName].sources).length}`);
+        placeText(`Creeps:    ${count}`);
+        placeText(' ');
+
+        for (const r in census) {
+            placeText(`${r} - ${census[r]}`);
+        }
+
+        return;
+
+        function placeText(text: string) {
+            room.visual.text(text, visCol, ++visRow, { align: "left" });
+        };
+
+    }
+
     public constructionComplete(id: string) {
 
-        // gameState.clusters[this.homeRoom].newStructure(gameState.rooms[this.workRoom].constructionSites[i].type);
         switch (this.constructionSites[id].type) {
             case "extension": {
                 gameState.clusters[this.clusterName].updateExtensions();
@@ -218,6 +266,17 @@ export class MyRoom {
         for (const s of Object.values(this.sources)) {
             if (s.updateContainers()) {
                 break;
+            }
+        }
+    }
+
+    public updateConstructionSites(): void {
+
+        const sites = Game.rooms[this.roomName].find(FIND_MY_CONSTRUCTION_SITES);
+
+        if (sites && sites.length > 0) {
+            for (const o of sites) {
+                this.constructionSites[o.id] = new MyContructionSite(o);
             }
         }
     }

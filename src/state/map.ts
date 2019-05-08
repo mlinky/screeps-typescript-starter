@@ -1,5 +1,6 @@
 import { gameState } from "defs";
 import { log } from "log/log";
+import { MyCluster } from "./cluster";
 
 export abstract class Map {
 
@@ -61,6 +62,30 @@ export abstract class Map {
         }
     }
 
+    public static findClosestCluster(pos: RoomPosition): string {
+        let selectedCluster: MyCluster | undefined;
+        let minCost: number = 9999;
+
+        for (const c of Object.values(gameState.clusters)) {
+
+            if (!c.origin) {
+                continue;
+            }
+
+            const p = PathFinder.search(c.origin, { pos, range: 1 });
+
+            if (p && !p.incomplete && p.cost < minCost) {
+                selectedCluster = c;
+                minCost = p.cost;
+            }
+        }
+
+        if (selectedCluster) {
+            return selectedCluster.clusterName;
+        } else {
+            return '';
+        }
+    }
 }
 
 export class LocationDetails {

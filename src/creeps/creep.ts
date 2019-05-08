@@ -1,13 +1,39 @@
 import { Tasks } from 'creep-tasks/Tasks';
 import { gameState } from 'defs';
 import { log } from 'log/log';
-import { roomManager } from 'managers/roomManager';
 import { profile } from "profiler/decorator";
 import { MyCluster } from 'state/cluster';
 import { MyRoom } from 'state/room';
 import '../prototypes/creep.prototype';
 
 const _DEBUG_CREEP: boolean = false;
+
+@profile
+export abstract class Creeps {
+
+    public static check() {
+        // Check room
+        for (const c in gameState.creeps) {
+            gameState.creeps[c].check();
+        }
+    }
+
+    public static run() {
+        // Run creep
+        for (const c in gameState.creeps) {
+            gameState.creeps[c].run();
+        }
+    }
+
+    public static tidy() {
+        for (const c in gameState.creeps) {
+            if (!(c in Game.creeps)) {
+                // Creep is dead - remove from collection
+                gameState.deleteCreep(c);
+            }
+        }
+    }
+}
 
 @profile
 export class MyCreep {
@@ -33,7 +59,7 @@ export class MyCreep {
 
     public run() {
 
-        // log.info('Base creep running');
+        log.info(`Base creep running for ${this.role} creep ${this.name}`);
 
     }
 
@@ -41,9 +67,10 @@ export class MyCreep {
         log.debug('base creep required call not implemented');
     }
 
-    private findDroppedEnergy(room: MyRoom): Resource | undefined {
+    private findDroppedEnergy(myRoom: MyRoom): Resource | undefined {
+        const room: Room = Game.rooms[myRoom.roomName];
 
-        for (const r of room.room.droppedResource) {
+        for (const r of room.droppedResource) {
             if (r.resourceType === RESOURCE_ENERGY && r.amount >= this.creep.carryCapacity) {
                 return r;
             }
@@ -53,28 +80,42 @@ export class MyCreep {
 
     }
 
-    public energyPickup() {
+    public energyPickup(room: string) {
 
-        const r: Resource | undefined = this.findDroppedEnergy(gameState.rooms[this.workRoom])
+        if (!gameState.rooms[room] || !Game.rooms[room]) {
+            // Got no visibility to the room in this tick - just head there
+            this.creep.task = Tasks.goToRoom(room);
+            return;
+        }
+
+        const r: Resource | undefined = this.findDroppedEnergy(gameState.rooms[room]);
 
         if (r && r.amount > 0) {
             this.creep.task = Tasks.pickup(r);
             return;
         }
 
-        for (const s of Object.values(gameState.rooms[this.workRoom].sources)) {
+        let fullestContainer: StructureContainer | undefined;
+        for (const s of Object.values(gameState.rooms[room].sources)) {
 
             if (s.container) {
                 const c: StructureContainer = Game.getObjectById(s.container.id) as StructureContainer
-                if (c.store[RESOURCE_ENERGY] > 0) {
+                if (c.store.energy > 0) {
                     // Try and target a container that has content available
                     // log.info(`Container targetted by ${c.targetedBy.length} creeps`);
-                    if (c.store[RESOURCE_ENERGY] - (c.targetedBy.length * 500) > 0) {
-                        this.creep.task = Tasks.withdraw(c, RESOURCE_ENERGY);
+                    if (!fullestContainer || fullestContainer.store.energy - (fullestContainer.targetedBy.length * 500) < c.store.energy - (c.targetedBy.length * 500)) {
+                        fullestContainer = c;
                     }
                 }
             }
         }
+
+        if (fullestContainer) {
+            this.creep.task = Tasks.withdraw(fullestContainer, RESOURCE_ENERGY);
+        }
+
+        return;
+
     }
 
     public findConstructionSite(room: MyRoom): ConstructionSite | undefined {
@@ -89,6 +130,10 @@ export class MyCreep {
                 // Construction complete
                 gameState.rooms[this.workRoom].constructionComplete(i);
             }
+
+            // Delete the construction site object and decrement the count
+            delete gameState.rooms[this.workRoom].constructionSites[i];
+
         }
         return;
     }

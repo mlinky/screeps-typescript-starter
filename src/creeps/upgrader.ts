@@ -56,7 +56,7 @@ export class CreepUpgrader extends MyCreep {
             }
 
             // Get energy elsewhere
-            this.energyPickup();
+            this.energyPickup(this.workRoom);
 
         }
     }

@@ -32,7 +32,7 @@ export class CreepHauler extends MyCreep {
         if (this.creep.carry.energy > 0) {
             // Deliver energy to spawn, extension, storage
             // log.info('setting transfer');
-            const t = this.findEnergyDestination(gameState.rooms[this.workRoom]);
+            const t = this.findEnergyDestination(gameState.rooms[this.homeRoom]);
 
             if (t) {
                 this.creep.task = Tasks.transfer(t);
@@ -42,7 +42,7 @@ export class CreepHauler extends MyCreep {
         } else {
             // Go get energy
             // log.info('setting collect');
-            this.energyPickup();
+            this.energyPickup(this.workRoom);
         }
     }
 

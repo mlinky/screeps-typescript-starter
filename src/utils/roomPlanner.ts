@@ -41,6 +41,7 @@ const layout: { [rcl: number]: Layout } = {
         'rcl': '4',
         'structs': {
             'spawn': { 'pos': [{ x: 0, y: 0 }] },
+            'storage': { 'pos': [{ x: 2, y: 0 }] },
             // tslint:disable-next-line:object-literal-sort-keys
             'extension': {
                 'pos': [{ x: -1, y: -1 }, { x: -1, y: -2 }, { x: -2, y: 0 }, { x: -1, y: 1 }, { x: -1, y: 2 }, { x: -2, y: -2 }, { x: -3, y: -1 }, { x: -3, y: 0 }, { x: -3, y: 1 }, { x: -2, y: 2 },
@@ -48,14 +49,14 @@ const layout: { [rcl: number]: Layout } = {
             },
             'container': { 'pos': [{ x: 0, y: -1 }] },
             'tower': { 'pos': [{ x: 1, y: 0 }] },
-            'road': { 'pos': [{ x: -1, y: 0 }, { x: -2, y: -1 }, { x: -3, y: -2 }, { x: -2, y: 1 }, { x: -3, y: 2 }, { x: -4, y: -1 }, { x: -4, y: 0 }, { x: -4, y: 1 }, { x: -3, y: -3 }, { x: -2, y: -4 }, { x: -1, y: -5 }, { x: 0, y: -5 }, { x: 1, y: -4 }, { x: 2, y: -3 }, { x: 1, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 3 }, { x: 1, y: 4 }, { x: 0, y: 5 }, { x: -1, y: 5 }, { x: -2, y: 4 }, { x: -3, y: 3 }] },
-            'storage': { 'pos': [{ x: 2, y: 0 }] }
+            'road': { 'pos': [{ x: -1, y: 0 }, { x: -2, y: -1 }, { x: -3, y: -2 }, { x: -2, y: 1 }, { x: -3, y: 2 }, { x: -4, y: -1 }, { x: -4, y: 0 }, { x: -4, y: 1 }, { x: -3, y: -3 }, { x: -2, y: -4 }, { x: -1, y: -5 }, { x: 0, y: -5 }, { x: 1, y: -4 }, { x: 2, y: -3 }, { x: 1, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 3 }, { x: 1, y: 4 }, { x: 0, y: 5 }, { x: -1, y: 5 }, { x: -2, y: 4 }, { x: -3, y: 3 }, { x: -5, y: -2 }, { x: -5, y: -3 }, { x: -4, y: -4 }, { x: -4, y: -5 }, { x: -3, y: -6 }, { x: -2, y: -6 }, { x: -5, y: 2 }, { x: -5, y: 3 }, { x: -4, y: 4 }, { x: -4, y: 5 }, { x: -3, y: 6 }, { x: -2, y: 6 }, { x: 1, y: 1 }, { x: 1, y: -1 }, { x: 2, y: -1 }, { x: 3, y: -1 }, { x: 4, y: -1 }, { x: 3, y: -2 }, { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 3, y: 2 }, { x: 4, y: 1 }, { x: 5, y: 0 }, { x: 3, y: -4 }, { x: 4, y: -5 }, { x: 3, y: -6 }, { x: 4, y: -7 }, { x: 5, y: -7 }, { x: 5, y: -5 }, { x: 6, y: -6 }, { x: 7, y: -6 }, { x: 8, y: -5 }, { x: 8, y: -4 }, { x: 7, y: -3 }, { x: 6, y: -4 }, { x: 7, y: -2 }, { x: 6, y: -1 }, { x: 1, y: -6 }, { x: 2, y: -7 }, { x: 0, y: -7 }, { x: -1, y: -7 }, { x: 9, y: -2 }, { x: 9, y: -3 }, { x: 8, y: -1 }, { x: 8, y: 0 }, { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 5 }, { x: 6, y: 1 }, { x: 7, y: 1 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }, { x: 7, y: 6 }, { x: 7, y: 5 }] }
         }
     }
 }
 
 
 export abstract class RoomPlanner {
+    private static buildCount: number = 0;
 
     public static planRoom(cluster: MyCluster) {
 
@@ -67,6 +68,10 @@ export abstract class RoomPlanner {
             return;
         }
 
+        // Set buildCount to the number of
+        this.buildCount = Object.keys(Game.constructionSites).length;
+
+        // Check for a controller
         if (room && room.controller) {
             rcl = room.controller.level;
         } else {
@@ -76,8 +81,8 @@ export abstract class RoomPlanner {
         for (const s in layout[rcl].structs) {
             for (const p of layout[rcl].structs[s].pos) {
 
-                // Exit if we already have 50 construction sites
-                if (gameState.constructionSites > 50) {
+                // Exit if we already have 80 construction sites
+                if (this.buildCount > 80) {
                     return;
                 }
 
@@ -111,8 +116,6 @@ export abstract class RoomPlanner {
                         break;
                     }
                 }
-
-
             }
         }
     }
@@ -149,7 +152,8 @@ export abstract class RoomPlanner {
             return;
         }
 
-        gameState.constructionSites++
-
+        // Increment the build count
+        this.buildCount++
+        return;
     }
 }

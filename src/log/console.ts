@@ -1,5 +1,4 @@
 import { gameState } from "defs";
-import { MyCluster } from "state/cluster";
 import { log } from "./log";
 
 export class MyConsole {
@@ -8,6 +7,7 @@ export class MyConsole {
         global.help = this.help();
         global.report = this.report;
         global.showSpawnQueue = this.showSpawnQueue;
+        global.creepCensus = this.creepCensus;
         global.debug = this.debug;
     }
 
@@ -22,9 +22,6 @@ export class MyConsole {
 
         for (const c of Object.values(gameState.clusters)) {
             log.info(`Cluster:   ${c.clusterName}`);
-            for (const r in c.creepsAvailable) {
-                log.info(`${r}: ${c.creepsAvailable[r]}`);
-            }
             ++count;
         }
 
@@ -57,7 +54,7 @@ export class MyConsole {
             log.info(`Spawn queue for ${clusterName} has ${gameState.clusters[name].creepRequests.length} entries`);
 
             for (const r of gameState.clusters[name].creepRequests) {
-                log.info(`Cluster: ${r.spawnRoom}\tRole: ${r.creepRole}\tRoom: ${r.workRoom}\tPriority:${r.priority}`);
+                log.info(`Cluster: ${r.spawnRoom}\tRoom: ${r.workRoom}\tPriority:${r.priority}\tRole: ${r.creepRole}`);
                 clusterRequests++;
                 totalRequests++;
             }
@@ -65,6 +62,35 @@ export class MyConsole {
             log.info(`Cluster: ${clusterName}\t${clusterRequests} requests.`)
 
         }
+
+    }
+
+    public static creepCensus(): string {
+        const census: { [room: string]: { [role: string]: number } } = {};
+        let count: number = 0;
+
+        for (const c of Object.values(gameState.creeps)) {
+            if (!census[c.workRoom]) {
+                census[c.workRoom] = {};
+            }
+            if (census[c.workRoom][c.role]) {
+                census[c.workRoom][c.role]++;
+            } else {
+                census[c.workRoom][c.role] = 1;
+            }
+            count++;
+        }
+
+        for (const room in census.room) {
+            const line: string = `Room ${room}`;
+            for (const role in census[room]) {
+                line.concat(` ${role}:${census[room][role]}`)
+            }
+            log.info(line);
+        }
+
+        log.info(`${JSON.stringify(census)}`)
+        return `${count} creeps in total`;
 
     }
 

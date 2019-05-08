@@ -5,7 +5,7 @@ export { }
 
 declare global {
     interface Room {
-        sources: Source[];
+        // sources: Source[];
         constructionSites: ConstructionSite[];
         spawns: StructureSpawn[];
         towers: StructureTower[];
@@ -39,21 +39,21 @@ Object.defineProperty(Room.prototype, 'constructionSites', {
 
 });
 
-Object.defineProperty(Room.prototype, 'sources', {
-    get() {
-        // If we dont have the value stored locally
-        // TODO - cache sources
-        if (!this._sources) {
-            // Get the sources objects from the id's in memory and store them locally
-            this._sources = this.find(FIND_SOURCES);
-        }
-        return this._sources;
-    },
+// Object.defineProperty(Room.prototype, 'sources', {
+//     get() {
+//         // If we dont have the value stored locally
+//         // TODO - cache sources
+//         if (!this._sources) {
+//             // Get the sources objects from the id's in memory and store them locally
+//             this._sources = this.find(FIND_SOURCES);
+//         }
+//         return this._sources;
+//     },
 
-    configurable: true,
-    enumerable: false
+//     configurable: true,
+//     enumerable: false
 
-});
+// });
 
 Object.defineProperty(Room.prototype, 'spawns', {
     get(): StructureSpawn[] | null {
@@ -118,123 +118,9 @@ Object.defineProperty(Room.prototype, 'droppedResource', {
 });
 
 
-// Object.defineProperty(Room.prototype, 'minersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._minersAvailable) {
-//             // Loop through creeps finding miners for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'miner' && creep.workRoom == this.name);
-
-//             this._minersAvailable = creepList.length;
-//         }
-//         return this._minersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'upgradersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._upgradersAvailable) {
-//             // Loop through creeps finding upgraders for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'upgrader' && creep.workRoom == this.name);
-
-//             this._upgradersAvailable = creepList.length;
-//         }
-//         return this._upgradersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'upgradersRequired', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._upgradersRequired) {
-//             // Check resources and scale upgraders according to what's available
-//             // TODO - only update this value once per so many ticks?
-//             this._upgradersRequired = 4;
-//         }
-//         return this._upgradersRequired;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'haulersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._haulersAvailable) {
-//             // Loop through creeps finding upgraders for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'hauler' && creep.workRoom == this.name);
-
-//             this._haulersAvailable = creepList.length;
-//         }
-//         return this._haulersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'haulersRequired', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._haulersRequired) {
-//             // Check resources and scale haulers according to what's required
-//             // TODO - only update this value once per so many ticks?
-//             this._haulersRequired = 1;
-//         }
-//         return this._haulersRequired;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'buildersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._buildersAvailable) {
-//             // Loop through creeps finding builders for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'builder' && creep.workRoom == this.name);
-
-//             this._buildersAvailable = creepList.length;
-//         }
-//         return this._buildersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Room.prototype.requestCreep = function (requestRoom: string, requestRole: string): void {
-
-//     if (_.isUndefined(this.creepsNeeded)) {
-//         this.creepsNeeded = [];
-//     }
-
-//     this.creepsNeeded.push(new CreepRequest(requestRoom, requestRole));
-
-// };
-
 Room.prototype.hasSpawns = function (): boolean {
 
-    return this.spawns == null ? false : true;
+    return this.spawns.length === 0 ? false : true;
 
 };
 

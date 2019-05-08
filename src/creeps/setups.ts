@@ -25,6 +25,11 @@ export const Roles = {
     ranged: 'hydralisk',
 };
 
+export const FlagType = {
+    none: 'none',
+    remote: 'remote'
+}
+
 /**
  * This object contains categorized default body setups for various types of creeps
  */

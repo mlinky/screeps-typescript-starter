@@ -1,15 +1,15 @@
 export const _REFRESH = {
     // Creeps
-    drone: 100,
-    transporter: 100,
-    upgrader: 100,
-    worker: 100,
+    drone: 1,
+    transporter: 1,
+    upgrader: 1,
+    worker: 1,
 
     // Room objects
     droppedResource: 25,
 
     // Room planner
-    flags: 100,
+    flags: 1,
     roomPlanner: 100
 };
 

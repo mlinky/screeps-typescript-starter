@@ -2,6 +2,7 @@ import { TaskHarvest } from "creep-tasks/TaskInstances/task_harvest";
 import { gameState } from "defs";
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
+import { MyCluster } from "./cluster";
 import { MyDefault } from "./default";
 import { LocationDetails, Map } from "./map";
 
@@ -9,8 +10,9 @@ const _DEBUG_SOURCES = false;
 
 @profile
 export class MySource extends MyDefault {
-    public source: Source;
+    public pos: RoomPosition;
     public roomName: string;
+    public clusterName: string = '';
     public container?: StructureContainer;
     public miningSpots: MiningSpot[] = [];
     public workParts: number = 0;
@@ -19,10 +21,14 @@ export class MySource extends MyDefault {
         // Call the base class
         super(source.id);
 
-        // Store the game object
-        this.source = source;
-
         this.roomName = source.room.name;
+        this.pos = source.pos;
+
+        this.clusterName = Map.findClosestCluster(source.pos);
+
+        if (this.clusterName === '') {
+            log.error(`Failed to select a cluster for source ${source.id}`);
+        }
 
         // Update the info for the source surroundings
         this.updateSurroundings();
@@ -33,7 +39,7 @@ export class MySource extends MyDefault {
 
     private updateSurroundings(): void {
         // Grab surroundings
-        const surroundings: LocationDetails[] = Map.lookAround(this.source.pos);
+        const surroundings: LocationDetails[] = Map.lookAround(this.pos);
         let containerPending: boolean = false;
 
         // Inspect surroundings
@@ -70,7 +76,7 @@ export class MySource extends MyDefault {
 
         if (!this.container && !containerPending) {
             // Need to place a container
-            const bestPos: RoomPosition | undefined = Map.findClosestConstructionPos(gameState.clusters[this.roomName].origin!, surroundings)
+            const bestPos: RoomPosition | undefined = Map.findClosestConstructionPos(gameState.clusters[this.clusterName].origin!, surroundings)
 
             if (bestPos) {
                 // We found a 'best' location
@@ -87,7 +93,7 @@ export class MySource extends MyDefault {
             return false;
         }
 
-        const surroundings: LocationDetails[] = Map.lookAround(this.source.pos);
+        const surroundings: LocationDetails[] = Map.lookAround(this.pos);
 
         for (const s of surroundings) {
             for (const l of s.results) {
@@ -106,7 +112,7 @@ export class MySource extends MyDefault {
     public check(): void {
         // Check the source
         if (_DEBUG_SOURCES) {
-            log.debug(`Room: ${this.roomName}, Source: ${this.source.id}, Container: ${(this.container ? this.container.id : 'undefined')}, Mining spots: ${this.miningSpots.length}, Workparts: ${this.workParts}`);
+            log.debug(`Room: ${this.roomName}, Source: ${this.id}, Container: ${(this.container ? this.container.id : 'undefined')}, Mining spots: ${this.miningSpots.length}, Workparts: ${this.workParts}`);
         }
     }
 }

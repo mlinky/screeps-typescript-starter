@@ -19,6 +19,7 @@ declare namespace NodeJS {
     help: string;
     report: (clusterName?: string | undefined) => string;
     showSpawnQueue: (clusterName?: string | undefined) => string;
+    creepCensus: () => string;
     debug: (type: string, name: string) => void;
     log: any;
   }
