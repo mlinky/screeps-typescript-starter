@@ -1,11 +1,11 @@
+import { _REFRESH, checkRefresh } from 'utils/refresh';
 import { profile } from '../profiler/decorator';
-import { checkRefresh, _REFRESH } from 'utils/refresh';
 
 export { }
 
 declare global {
     interface Room {
-        sources: Source[];
+        // sources: Source[];
         constructionSites: ConstructionSite[];
         spawns: StructureSpawn[];
         towers: StructureTower[];
@@ -24,7 +24,7 @@ declare global {
 }
 
 Object.defineProperty(Room.prototype, 'constructionSites', {
-    get: function () {
+    get() {
         // If we dont have the value stored locally
         // TODO - cache construction sites
         if (!this._constructionSites) {
@@ -34,29 +34,29 @@ Object.defineProperty(Room.prototype, 'constructionSites', {
         return this._constructionSites;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
-Object.defineProperty(Room.prototype, 'sources', {
-    get: function () {
-        // If we dont have the value stored locally
-        // TODO - cache sources
-        if (!this._sources) {
-            // Get the sources objects from the id's in memory and store them locally
-            this._sources = this.find(FIND_SOURCES);
-        }
-        return this._sources;
-    },
+// Object.defineProperty(Room.prototype, 'sources', {
+//     get() {
+//         // If we dont have the value stored locally
+//         // TODO - cache sources
+//         if (!this._sources) {
+//             // Get the sources objects from the id's in memory and store them locally
+//             this._sources = this.find(FIND_SOURCES);
+//         }
+//         return this._sources;
+//     },
 
-    enumerable: false,
-    configurable: true
+//     configurable: true,
+//     enumerable: false
 
-});
+// });
 
 Object.defineProperty(Room.prototype, 'spawns', {
-    get: function (): StructureSpawn[] | null {
+    get(): StructureSpawn[] | null {
         // If we dont have the value stored locally
         // TODO - cache spawns
         if (!this._spawns) {
@@ -66,30 +66,30 @@ Object.defineProperty(Room.prototype, 'spawns', {
         return this._spawns;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'towers', {
-    get: function (): StructureSpawn[] | null {
+    get(): StructureSpawn[] | null {
         // If we dont have the value stored locally
         // TODO - cache towers
         if (!this._towers) {
             // Get the towers and store them locally
-            this._towers = this.find(FIND_STRUCTURES, { filter: (s: Structure) => s.structureType == STRUCTURE_TOWER });
+            this._towers = this.find(FIND_STRUCTURES, { filter: (s: Structure) => s.structureType === STRUCTURE_TOWER });
         }
         return this._towers;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'availableSpawn', {
-    get: function (): StructureSpawn | undefined {
-        for (let spawn of this.spawns) {
+    get(): StructureSpawn | undefined {
+        for (const spawn of this.spawns) {
             if (!spawn.spawning) {
                 return spawn;
             }
@@ -97,13 +97,13 @@ Object.defineProperty(Room.prototype, 'availableSpawn', {
         return;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 Object.defineProperty(Room.prototype, 'droppedResource', {
-    get: function (): Resource[] | null {
+    get(): Resource[] | null {
         // If we dont have the value stored locally
         if (!this._droppedResource || checkRefresh(_REFRESH.droppedResource)) {
             // Get the towers and store them locally
@@ -112,129 +112,15 @@ Object.defineProperty(Room.prototype, 'droppedResource', {
         return this._droppedResource;
     },
 
-    enumerable: false,
-    configurable: true
+    configurable: true,
+    enumerable: false
 
 });
 
 
-// Object.defineProperty(Room.prototype, 'minersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._minersAvailable) {
-//             // Loop through creeps finding miners for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'miner' && creep.workRoom == this.name);
-
-//             this._minersAvailable = creepList.length;
-//         }
-//         return this._minersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'upgradersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._upgradersAvailable) {
-//             // Loop through creeps finding upgraders for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'upgrader' && creep.workRoom == this.name);
-
-//             this._upgradersAvailable = creepList.length;
-//         }
-//         return this._upgradersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'upgradersRequired', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._upgradersRequired) {
-//             // Check resources and scale upgraders according to what's available
-//             // TODO - only update this value once per so many ticks?
-//             this._upgradersRequired = 4;
-//         }
-//         return this._upgradersRequired;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'haulersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._haulersAvailable) {
-//             // Loop through creeps finding upgraders for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'hauler' && creep.workRoom == this.name);
-
-//             this._haulersAvailable = creepList.length;
-//         }
-//         return this._haulersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'haulersRequired', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._haulersRequired) {
-//             // Check resources and scale haulers according to what's required
-//             // TODO - only update this value once per so many ticks?
-//             this._haulersRequired = 1;
-//         }
-//         return this._haulersRequired;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Object.defineProperty(Room.prototype, 'buildersAvailable', {
-//     get: function (): number {
-//         // If we dont have the value stored locally
-//         if (!this._buildersAvailable) {
-//             // Loop through creeps finding builders for this room
-//             // TODO - cache this value
-//             let creepList = _.filter(Game.creeps, (creep) => creep.role == 'builder' && creep.workRoom == this.name);
-
-//             this._buildersAvailable = creepList.length;
-//         }
-//         return this._buildersAvailable;
-//     },
-
-//     enumerable: false,
-//     configurable: true
-
-// });
-
-// Room.prototype.requestCreep = function (requestRoom: string, requestRole: string): void {
-
-//     if (_.isUndefined(this.creepsNeeded)) {
-//         this.creepsNeeded = [];
-//     }
-
-//     this.creepsNeeded.push(new CreepRequest(requestRoom, requestRole));
-
-// };
-
 Room.prototype.hasSpawns = function (): boolean {
 
-    return this.spawns == null ? false : true;
+    return this.spawns.length === 0 ? false : true;
 
 };
 
@@ -244,7 +130,7 @@ Room.prototype.canSpawn = function (): boolean {
         return false;
     }
 
-    for (let spawn of this.spawns) {
+    for (const spawn of this.spawns) {
         if (!spawn.spawning) {
             return true;
         }

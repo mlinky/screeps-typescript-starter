@@ -1,13 +1,13 @@
-import { MyDefault } from "./default";
-import { profile } from "profiler/decorator";
-import { locationDetails, map } from "./map";
 import { gameState } from "defs";
+import { profile } from "profiler/decorator";
+import { MyDefault } from "./default";
+import { LocationDetails, Map } from "./map";
 
 @profile
 export class MyController extends MyDefault {
-    controller: StructureController;
-    container?: StructureContainer;
-    room: string;
+    public controller: StructureController;
+    public container?: StructureContainer;
+    public room: string;
 
     constructor(controller: StructureController) {
 
@@ -16,11 +16,14 @@ export class MyController extends MyDefault {
         this.controller = controller;
         this.room = controller.room.name;
 
-        this.checkContainer();
+        // Only do a container for cluster hub rooms
+        if (gameState.rooms[this.room].clusterHub) {
+            this.checkContainer();
+        }
 
     }
 
-    checkContainer() {
+    public checkContainer() {
 
         let containerPending: boolean = false;
 
@@ -28,15 +31,15 @@ export class MyController extends MyDefault {
             return;
         }
 
-        let surroundings: locationDetails[] = map.lookAround(this.controller.pos, 3);
+        const surroundings: LocationDetails[] = Map.lookAround(this.controller.pos, 3);
 
-        for (let s of surroundings) {
-            for (let l of s.results) {
+        for (const s of surroundings) {
+            for (const l of s.results) {
                 switch (l.type) {
                     case LOOK_STRUCTURES: {
                         // Have we found the container?
-                        if (l.structure && l.structure.structureType == STRUCTURE_CONTAINER) {
-                            this.container = <StructureContainer>Game.getObjectById(l.structure.id);
+                        if (l.structure && l.structure.structureType === STRUCTURE_CONTAINER) {
+                            this.container = Game.getObjectById(l.structure.id) as StructureContainer;
                         }
 
                         break;
@@ -44,7 +47,7 @@ export class MyController extends MyDefault {
 
                     case LOOK_CONSTRUCTION_SITES: {
                         // Is this the container construction site
-                        if (l.constructionSite && l.constructionSite.structureType == STRUCTURE_CONTAINER) {
+                        if (l.constructionSite && l.constructionSite.structureType === STRUCTURE_CONTAINER) {
                             containerPending = true;
                         }
                     }
@@ -53,7 +56,7 @@ export class MyController extends MyDefault {
         }
 
         if (!this.container && !containerPending) {
-            let bestPos: RoomPosition | undefined = map.findClosestConstructionPos(gameState.clusters[this.room].origin!, surroundings)
+            const bestPos: RoomPosition | undefined = Map.findClosestConstructionPos(gameState.clusters[this.room].origin!, surroundings)
 
             if (bestPos) {
                 // We found a 'best' location

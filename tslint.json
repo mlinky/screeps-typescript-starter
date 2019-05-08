@@ -1,15 +1,27 @@
 {
   "rulesDirectory": "tslint-plugin-prettier",
-  "extends" : [
+  "extends": [
     "tslint:recommended",
     "tslint-config-prettier"
   ],
   "rules": {
     "forin": false,
-    "interface-name": [true, "never-prefix"],
-    "member-ordering": [false],
-    "no-console": [false],
-    "no-namespace": [true, "allow-declarations"],
+    "no-conditional-assignment": true,
+    "max-classes-per-file":false,
+    "interface-name": [
+      true,
+      "never-prefix"
+    ],
+    "member-ordering": [
+      false
+    ],
+    "no-console": [
+      false
+    ],
+    "no-namespace": [
+      true,
+      "allow-declarations"
+    ],
     "variable-name": [
       true,
       "ban-keywords",

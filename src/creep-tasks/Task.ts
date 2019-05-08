@@ -15,6 +15,7 @@
 import { initializeTask } from './utilities/initializer';
 import { deref, derefRoomPosition } from './utilities/helpers';
 import { Traveler } from '../utils/traveler'
+import { log } from 'log/log';
 
 
 export type targetType = { ref: string, pos: RoomPosition }; // overwrite this variable in derived classes to specify more precise typing

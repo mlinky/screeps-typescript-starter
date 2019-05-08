@@ -1,54 +1,70 @@
-import { MyRoom } from "./room";
-import { MySpawn } from "./spawn";
+import { Task } from "creep-tasks/Task";
+import { CreepRequest, RequestPriority } from "creeps/creepRequest";
+import { CreepHauler } from "creeps/hauler";
+import { CreepMiner } from "creeps/miner";
+import { Roles } from "creeps/setups";
+import { CreepUpgrader } from "creeps/upgrader";
+import { CreepWorker } from "creeps/worker";
+import { gameState } from "defs";
+import { log } from "log/log";
+import { profile } from "profiler/decorator";
+import { isUndefined } from "util";
+import { _REFRESH, checkRefresh } from "utils/refresh";
+import { RoomPlanner } from "utils/roomPlanner";
 import { MyExtension } from "./extension";
-import { MyTower } from "./tower";
 import { MyLab } from "./lab";
 import { MyLink } from "./link";
-import { profile } from "profiler/decorator";
-import { CreepRequest, RequestPriority } from "creeps/creepRequest";
-import { gameState } from "defs";
-import { Task } from "creep-tasks/Task";
-import { CreepMiner } from "creeps/miner";
-import { CreepHauler } from "creeps/hauler";
-import { CreepUpgrader } from "creeps/upgrader";
-import { checkRefresh, _REFRESH } from "utils/refresh";
-import { CreepWorker } from "creeps/worker";
-import { RoomPlanner } from "utils/roomPlanner";
-import { MyWall } from "./wall";
 import { MyRampart } from "./ramparts";
+import { MyRoom } from "./room";
+import { MySpawn } from "./spawn";
+import { MyTower } from "./tower";
+import { MyWall } from "./wall";
 
-const Roles = ['miner', 'hauler', 'worker', 'upgrader']
+const _DEBUG_CLUSTER: boolean = false;
+const _DEBUG_REQUESTS: boolean = true;
+
+@profile
+export abstract class Clusters {
+
+    public static check() {
+        // Check cluster
+        for (const c in gameState.clusters) {
+            gameState.clusters[c].check();
+        }
+    }
+
+    public static run() {
+        // Run cluster
+        for (const c in gameState.clusters) {
+            gameState.clusters[c].run();
+        }
+    }
+}
 
 @profile
 export class MyCluster {
 
-    clusterName: string;
-    origin?: RoomPosition;
+    public clusterName: string;
+    public origin?: RoomPosition;
 
-    spawns: { [spawnID: string]: MySpawn } = {};
-    extensions: { [extensionID: string]: MyExtension } = {};
-    towers: { [towerID: string]: MyTower } = {};
-    labs: { [labID: string]: MyLab } = {};
-    links: { [linkID: string]: MyLink } = {};
-    walls: { [sourceID: string]: MyWall } = {};
-    ramparts: { [sourceID: string]: MyRampart } = {};
-    creepRequests: CreepRequest[] = [];
+    public spawns: { [spawnID: string]: MySpawn } = {};
+    public extensions: { [extensionID: string]: MyExtension } = {};
+    public towers: { [towerID: string]: MyTower } = {};
+    public labs: { [labID: string]: MyLab } = {};
+    public links: { [linkID: string]: MyLink } = {};
+    public walls: { [sourceID: string]: MyWall } = {};
+    public ramparts: { [sourceID: string]: MyRampart } = {};
+    public creepRequests: CreepRequest[] = [];
 
-    hasSpawns: boolean = false;
-    canSpawn: boolean = false;
-    _creepsRequired: { [role: string]: number } = {}
-    creepsAvailable: { [role: string]: number } = {}
-    creepsRequested: { [role: string]: number } = {}
-    tasks: { [digest: string]: Task } = {};
+    public hasSpawns: boolean = false;
+    public canSpawn: boolean = false;
+    public tasks: { [digest: string]: Task } = {};
 
-    initialised: boolean = false;
-    firstTick: boolean = true;
+    public initialised: boolean = false;
 
     constructor(room: Room) {
         // Init cluster state
         this.clusterName = room.name;
-
-        this.initCounts();
 
         // Add the cluster hub room
         gameState.rooms[room.name] = new MyRoom(room, this.clusterName, true);
@@ -59,10 +75,9 @@ export class MyCluster {
 
     // Initialise cluster state
     public initCluster(): void {
-        let cluster: MyCluster = this;
+        const cluster: MyCluster = this;
 
         // Init room objects
-        this.initCounts();
         this.updateSpawns();
         this.updateExtensions();
         this.updateTowers();
@@ -72,10 +87,10 @@ export class MyCluster {
         this.updateWalls();
 
         // Get a list of rooms for this cluster
-        let roomList = _.filter(gameState.rooms, (room) => room.clusterName = this.clusterName);
+        const roomList = _.filter(gameState.rooms, (room) => room.clusterName === this.clusterName);
 
         // Init rooms for the cluster
-        for (let r of roomList) {
+        for (const r of roomList) {
             gameState.rooms[r.roomName].initRoom()
         }
 
@@ -93,7 +108,7 @@ export class MyCluster {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.extensions[o.id]) {
                     this.extensions[o.id] = new MyExtension(o.id);
                 }
@@ -109,9 +124,9 @@ export class MyCluster {
 
         if (structures && structures.length > 0) {
             this.hasSpawns = true;
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.spawns[o.id]) {
-                    this.spawns[o.id] = new MySpawn(<StructureSpawn>o);
+                    this.spawns[o.id] = new MySpawn(o as StructureSpawn);
                 }
 
                 // Record the left-most spawn as the origin
@@ -130,7 +145,7 @@ export class MyCluster {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.links[o.id]) {
                     this.links[o.id] = new MyLink(o.id);
                 }
@@ -144,7 +159,7 @@ export class MyCluster {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.walls[o.id]) {
                     this.walls[o.id] = new MyWall(o.id);
                 }
@@ -158,7 +173,7 @@ export class MyCluster {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 this.ramparts[o.id] = new MyRampart(o.id);
             }
         }
@@ -175,7 +190,7 @@ export class MyCluster {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.towers[o.id]) {
                     this.towers[o.id] = new MyTower(o.id);
                 }
@@ -197,7 +212,7 @@ export class MyCluster {
         });
 
         if (structures && structures.length > 0) {
-            for (let o of structures) {
+            for (const o of structures) {
                 if (!this.labs[o.id]) {
                     this.labs[o.id] = new MyLab(o.id);
                 }
@@ -216,14 +231,6 @@ export class MyCluster {
 
     // Check the cluster at the start of the run loop
     public check(): void {
-        // Handle the first tick
-        if (this.firstTick) {
-            for (let r of Roles) {
-                this.updateRequired(r);
-            }
-            this.firstTick = false;
-        }
-
         this.checkSpawns();
         this.checkCreeps();
 
@@ -232,74 +239,54 @@ export class MyCluster {
         }
     }
 
+    public checkAndRequest(role: string, room: string, required: number, requestPriority: string, firstRequestPriority: string = requestPriority): void {
+
+        const creeps = _.filter(gameState.creeps, c => c.role === role && c.workRoom === room && c.homeRoom === this.clusterName);
+
+        // Only have one outstanding request per remote
+        if (creeps.length < required && !this.requestExists(room, role, requestPriority)) {
+            log.debug(`Creep ${role} requested for room ${room} in cluster ${this.clusterName} creep count ${creeps.length} required ${required} request exists? ${this.requestExists(room, role, requestPriority)}`, _DEBUG_REQUESTS);
+            this.requestCreep(room, role, (creeps.length === 0 ? firstRequestPriority : requestPriority));
+        }
+    }
+
     // Run cluster acions at the end of a run loop
     public run(): void {
         this.runSpawns();
         this.runTowers();
-        this.runVisuals();
     }
-
-    public checkDefined(role: string): void {
-        if (!this.creepsAvailable[role]) {
-            this.creepsAvailable[role] = 0;
-        }
-
-        if (!this._creepsRequired[role]) {
-            this._creepsRequired[role] = 0;
-        }
-
-        if (!this.creepsRequested[role]) {
-            this.creepsRequested[role] = 0;
-        }
-    }
-
 
     //#endregion Public
 
     //#region Private
 
-    // Initialise creep counts for the cluster
-    private initCounts() {
-        this._creepsRequired = {}
-        this.creepsAvailable = {}
-        this.creepsRequested = {}
-    }
-
     // Check creep counts
     private checkCreeps() {
 
-        // Only check for creep requirements if the room can spawn
-        if (this.canSpawn) {
-            // Check what we have vs what we need
-            for (let r of Roles) {
-                checkRole(this, r);
-            }
+        log.debug(`Check creeps - cluster ${this.clusterName}, canSpawn ${this.canSpawn}, hasSpawns ${this.hasSpawns}`, _DEBUG_CLUSTER)
+
+        // Miners
+        if (checkRefresh(_REFRESH.drone)) {
+            this.checkAndRequest(Roles.drone, this.clusterName, CreepMiner.required(this), RequestPriority[6], RequestPriority[9]);
+        }
+
+        // Haulers
+        if (checkRefresh(_REFRESH.transporter)) {
+            this.checkAndRequest(Roles.transporter, this.clusterName, CreepHauler.required(this), RequestPriority[6], RequestPriority[7]);
+        }
+
+        // Workers
+        if (checkRefresh(_REFRESH.worker)) {
+            this.checkAndRequest(Roles.worker, this.clusterName, CreepWorker.required(this), RequestPriority[5], RequestPriority[7]);
+        }
+
+        // Upgraders
+        if (checkRefresh(_REFRESH.upgrader)) {
+            this.checkAndRequest(Roles.upgrader, this.clusterName, CreepUpgrader.required(this), RequestPriority[5], RequestPriority[7]);
         }
 
         return;
 
-        // Check upgrader numbers
-        function checkRole(cluster: MyCluster, role: string): void {
-            if (cluster.hasSpawns) {
-                if (cluster.creepsRequired(role) > (cluster.creepsAvailable[role] + cluster.creepsRequested[role])) {
-                    let priority: RequestPriority;
-
-                    if (cluster.creepsAvailable[role] + cluster.creepsRequested[role] == 0) {
-                        // No creeps of this type found or requested
-                        if (role == 'miner') {
-                            priority = RequestPriority.urgent;
-                        } else {
-                            priority = RequestPriority.high;
-                        }
-                    } else {
-                        priority = RequestPriority.low;
-                    }
-
-                    cluster.requestCreep(cluster.clusterName, role, priority);
-
-                }
-            }
-        }
     }
 
     // Check spawns
@@ -308,102 +295,35 @@ export class MyCluster {
         // Set the flag to false
         this.canSpawn = false;
 
-        for (let s in this.spawns) {
-            let spawn: StructureSpawn | null = Game.getObjectById(s);
+        for (const s in this.spawns) {
+            const spawn: StructureSpawn | null = Game.getObjectById(s);
 
-            if (spawn && spawn.spawning && spawn.spawning.remainingTime == 1) {
-                // Spawn is nearly complete - add the creep ready for action
-                if (!Game.creeps[spawn.spawning.name].added) {
-                    gameState.addCreep(Game.creeps[spawn.spawning.name]);
-                    Game.creeps[spawn.spawning.name].added = true;
-                }
-            } else if (spawn && spawn.room.energyAvailable >= 300) {
+            if (spawn && spawn.spawning && !Game.creeps[spawn.spawning.name].added) {
+                gameState.addCreep(Game.creeps[spawn.spawning.name]);
+                Game.creeps[spawn.spawning.name].added = true;
+            }
+
+            if (spawn && !spawn.spawning) {
                 // Spawn is valid and not active
                 this.canSpawn = true;
             }
         }
     }
 
-    // Creeps required
-    private creepsRequired(role: string): number {
-        if (this._creepsRequired[role] == 0) {
-            let updateRequired: boolean = false;
-
-            switch (role) {
-                case 'miner': {
-                    if (checkRefresh(_REFRESH.miner)) {
-                        updateRequired = true;
-                    }
-                }
-                case 'upgrader': {
-                    if (checkRefresh(_REFRESH.upgrader)) {
-                        updateRequired = true;
-                    }
-                }
-                case 'hauler': {
-                    if (checkRefresh(_REFRESH.hauler)) {
-                        updateRequired = true;
-                    }
-                }
-                case 'worker': {
-                    if (checkRefresh(_REFRESH.worker)) {
-                        updateRequired = true;
-                    }
-                }
-
-            }
-
-            if (updateRequired) {
-                this.updateRequired(role);
-            }
-        }
-
-        return this._creepsRequired[role]
-    }
-
-    private updateRequired(role: string): void {
-
-        // Make sure the role variables are defined
-        this.checkDefined(role);
-
-        switch (role) {
-            case 'miner': {
-                this._creepsRequired[role] = CreepMiner.required(this);
-                break;
-            }
-            case 'hauler': {
-                this._creepsRequired[role] = CreepHauler.required(this);
-                break;
-            }
-            case 'worker': {
-                this._creepsRequired[role] = CreepWorker.required(this);
-                break;
-            }
-            case 'upgrader': {
-                this._creepsRequired[role] = CreepUpgrader.required(this);
-                break;
-            }
-            default: {
-                this._creepsRequired[role] = 1;
-                break;
-            }
-        }
-    }
-
     // Run the towers
     private runTowers() {
-        let room: Room = Game.rooms[this.clusterName];
+        const room: Room = Game.rooms[this.clusterName];
 
         // Only run if hostiles in room and tower count>0
         if (Object.keys(gameState.rooms[this.clusterName].hostiles).length > 0 && Object.keys(this.towers).length > 0) {
-            for (let t in this.towers) {
-                let tower: StructureTower | null = Game.getObjectById(t);
+            for (const t in this.towers) {
+                const tower: StructureTower | null = Game.getObjectById(t);
 
                 if (tower) {
-                    let closestHostile: Creep | null = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
+                    const closestHostile: Creep | null = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS);
 
                     // Attack closest hostile
-                    if (closestHostile != undefined) {
+                    if (closestHostile !== null) {
                         tower.attack(closestHostile);
                     }
                 }
@@ -411,45 +331,42 @@ export class MyCluster {
         }
     }
 
-    private runVisuals() {
-        let room: Room = Game.rooms[this.clusterName];
-        let visRow: number = 0;
-        let visCol: number = 0;
-
-        placeText(`Sources:    ${Object.keys(gameState.rooms[this.clusterName].sources).length}`);
-        for (let r in this._creepsRequired) {
-            placeText(`${r}: ${this.creepsAvailable[r]}/${this.creepsRequired(r)}/${this.creepsRequested[r]}`);
-        }
-
-        return;
-
-        function placeText(text: string) {
-            room.visual.text(text, visCol, ++visRow, { align: "left" });
-        };
-
-    }
-
     private runSpawns() {
         // Check the room can spawn
         if (this.canSpawn) {
-            for (let id in this.spawns) {
+            for (const id in this.spawns) {
                 // Get the spawn
-                let s: StructureSpawn | null = Game.getObjectById(id);
+                const s: StructureSpawn | null = Game.getObjectById(id);
 
                 // Spawn is valid and not spawning
                 if (s && !s.spawning) {
                     // Spawn based on priority
                     switch (true) {
-                        case spawnByPriority(this, RequestPriority.urgent, s): {
+                        case spawnByPriority(this, RequestPriority[9], s): {
                             break;
                         }
-                        case spawnByPriority(this, RequestPriority.high, s): {
+                        case spawnByPriority(this, RequestPriority[8], s): {
                             break;
                         }
-                        case spawnByPriority(this, RequestPriority.medium, s): {
+                        case spawnByPriority(this, RequestPriority[7], s): {
                             break;
                         }
-                        case spawnByPriority(this, RequestPriority.low, s): {
+                        case spawnByPriority(this, RequestPriority[6], s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority[5], s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority[4], s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority[3], s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority[2], s): {
+                            break;
+                        }
+                        case spawnByPriority(this, RequestPriority[1], s): {
                             break;
                         }
                     }
@@ -459,39 +376,58 @@ export class MyCluster {
 
         return;
 
-        function spawnByPriority(cluster: MyCluster, priority: RequestPriority, spawn: StructureSpawn): boolean {
-            let spawnReturn: boolean = false;
-            const index: number = cluster.creepRequests.findIndex((request: CreepRequest) => { return request.priority == priority })
+        function spawnByPriority(cluster: MyCluster, priority: string, spawn: StructureSpawn): boolean {
+            let spawnReturn: { result: boolean, creepName: string } = { result: false, creepName: '' };
+            const index: number = cluster.creepRequests.findIndex((request: CreepRequest) => request.priority === priority);
 
             if (index >= 0) {
+
+                log.debug(`Item ${index} selected for spawning`, _DEBUG_REQUESTS);
+
+                // Action the request
+                if (!cluster.creepRequests[index].testRequest(spawn)) {
+                    // Can't spawn it yet - return true and wait for next tick
+                    return true;
+                }
+
                 spawnReturn = cluster.creepRequests[index].actionRequest(spawn);
 
-                if (spawnReturn) {
-                    // Decrement requested creep number
-                    cluster.creepsRequested[cluster.creepRequests[index].creepRole]--;
+                if (spawnReturn.result && spawnReturn.creepName !== '') {
 
-                    // Increment available creeps
-                    cluster.creepsAvailable[cluster.creepRequests[index].creepRole]++
+                    log.debug(`Spawn returned true`, _DEBUG_REQUESTS);
+
+                    // Add the creep to gamestate
+                    gameState.addCreep(Game.creeps[spawnReturn.creepName]);
 
                     // Remove request array element
                     cluster.creepRequests.splice(index, 1);
+
                 }
 
             }
 
-            return spawnReturn;
+            return spawnReturn.result;
 
         }
     }
 
     // Make a creep request
-    private requestCreep(requestRoom: string, requestRole: string, priority: RequestPriority): void {
+    public requestExists(requestRoom: string, requestRole: string, priority: string): boolean {
 
-        // Make request
+        const requests = this.creepRequests.find(r => r.spawnRoom === this.clusterName && r.workRoom === requestRoom && r.creepRole === requestRole && r.priority === priority);
+
+        if (requests) {
+            // Request exists
+            return true;
+        }
+
+        return false;
+    }
+
+    public requestCreep(requestRoom: string, requestRole: string, priority: string): void {
+
+        // Add request
         this.creepRequests.push(new CreepRequest(this.clusterName, requestRoom, requestRole, priority));
-
-        // Track requested creeps
-        this.creepsRequested[requestRole]++;
 
     };
 

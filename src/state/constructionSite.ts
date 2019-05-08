@@ -1,9 +1,9 @@
-import { MyDefault } from "./default";
 import { profile } from "profiler/decorator";
+import { MyDefault } from "./default";
 
 @profile
 export class MyContructionSite extends MyDefault {
-    type: BuildableStructureConstant;
+    public type: BuildableStructureConstant;
 
     constructor(site: ConstructionSite) {
         super(site.id);

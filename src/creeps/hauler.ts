@@ -1,9 +1,9 @@
-import { profile } from "profiler/decorator";
-import { MyCreep } from "creeps/creep";
-import { log } from "log/log";
-import { MyCluster } from "state/cluster";
 import { Tasks } from "creep-tasks/Tasks";
+import { MyCreep } from "creeps/creep";
 import { gameState } from "defs";
+import { log } from "log/log";
+import { profile } from "profiler/decorator";
+import { MyCluster } from "state/cluster";
 
 @profile
 export class CreepHauler extends MyCreep {
@@ -12,9 +12,9 @@ export class CreepHauler extends MyCreep {
         super(creep);
     }
 
-    run() {
+    public run() {
 
-        //log.info('Hauler running');
+        // log.info('Hauler running');
         if (this.creep.isIdle) {
             this.newTask();
         }
@@ -32,7 +32,7 @@ export class CreepHauler extends MyCreep {
         if (this.creep.carry.energy > 0) {
             // Deliver energy to spawn, extension, storage
             // log.info('setting transfer');
-            let t = this.findEnergyDestination(gameState.rooms[this.workRoom]);
+            const t = this.findEnergyDestination(gameState.rooms[this.homeRoom]);
 
             if (t) {
                 this.creep.task = Tasks.transfer(t);
@@ -42,7 +42,7 @@ export class CreepHauler extends MyCreep {
         } else {
             // Go get energy
             // log.info('setting collect');
-            this.energyPickup();
+            this.energyPickup(this.workRoom);
         }
     }
 
