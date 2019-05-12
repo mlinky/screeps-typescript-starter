@@ -11,6 +11,7 @@ interface Memory {
   uuid: number;
   log: any;
   profiler?: any;
+  settings: any;
 }
 
 // `global` extension samples

@@ -5,12 +5,13 @@ import { CreepSetup } from './CreepSetup';
  */
 export const Roles = {
     // Civilian roles
-    claim: 'infestor',
+    claimer: 'claimer',
     drone: 'drone',
     filler: 'filler',
     manager: 'manager',
     pioneer: 'pioneer',
     queen: 'queen',
+    reserver: 'reserver',
     scout: 'scout',
     transporter: 'transporter',
     upgrader: 'upgrader',
@@ -48,6 +49,11 @@ export const Setups = {
                 sizeLimit: 3,
             }),
 
+            lowLvl: new CreepSetup(Roles.drone, {
+                pattern: [WORK, WORK, WORK, CARRY, MOVE],
+                sizeLimit: 3,
+            }),
+
             standard: new CreepSetup(Roles.drone, {
                 pattern: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE],
                 sizeLimit: 1,
@@ -77,17 +83,17 @@ export const Setups = {
 
     infestors: {
 
-        claim: new CreepSetup(Roles.claim, {
+        claim: new CreepSetup(Roles.claimer, {
             pattern: [CLAIM, MOVE],
             sizeLimit: 1
         }),
 
-        reserve: new CreepSetup(Roles.claim, {
+        reserve: new CreepSetup(Roles.claimer, {
             pattern: [CLAIM, MOVE],
             sizeLimit: 4,
         }),
 
-        controllerAttacker: new CreepSetup(Roles.claim, {
+        controllerAttacker: new CreepSetup(Roles.claimer, {
             pattern: [CLAIM, MOVE],
             sizeLimit: Infinity,
         }),

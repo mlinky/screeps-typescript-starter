@@ -2,11 +2,10 @@ import { TaskHarvest } from "creep-tasks/TaskInstances/task_harvest";
 import { gameState } from "defs";
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
+import { Debug } from "settings";
 import { MyCluster } from "./cluster";
 import { MyDefault } from "./default";
 import { LocationDetails, Map } from "./map";
-
-const _DEBUG_SOURCES = false;
 
 @profile
 export class MySource extends MyDefault {
@@ -111,7 +110,7 @@ export class MySource extends MyDefault {
 
     public check(): void {
         // Check the source
-        if (_DEBUG_SOURCES) {
+        if (Debug.sources) {
             log.debug(`Room: ${this.roomName}, Source: ${this.id}, Container: ${(this.container ? this.container.id : 'undefined')}, Mining spots: ${this.miningSpots.length}, Workparts: ${this.workParts}`);
         }
     }

@@ -64,12 +64,12 @@ export class CreepUpgrader extends MyCreep {
     public static required(cluster: MyCluster): number {
         // How many upgraders required for the cluster
         if (gameState.rooms[cluster.clusterName].controller) {
-            switch (gameState.rooms[cluster.clusterName].controller!.controller.level) {
+            switch (gameState.rooms[cluster.clusterName].controller!.level()) {
                 case 1: {
-                    return 2;
+                    return 0;
                 }
                 case 2: {
-                    return 2;
+                    return (Game.rooms[cluster.clusterName].energyCapacityAvailable < 400 ? 0 : 2);
                 }
                 case 3: {
                     return 2;

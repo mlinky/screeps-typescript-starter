@@ -1,4 +1,5 @@
 import { gameState } from "defs";
+import { Debug } from "settings";
 import { log } from "./log";
 
 export class MyConsole {
@@ -94,8 +95,31 @@ export class MyConsole {
 
     }
 
-    public static debug(type: string, name: string) {
-        log.info('debug not implemented yet');
+    public static debug(toggle: string): string {
+
+        if (toggle === '') {
+            // List possible debug items
+            for (const d in Debug) {
+                let font: string = '#ff0000';
+                if (Debug[d]) {
+                    font = '#00ff00'
+                }
+                console.log(`${d} <font color="#${font}">${Debug[d]}</font>`);
+            }
+            return 'blank toggle';
+
+        } else {
+            for (const d in Debug) {
+                if (d === toggle) {
+                    // Found the flag to switch
+                    Debug[d] = !Debug[d];
+                    return `Changed Debug[${d}] from ${(!Debug[d] ? '<font color="#00ff00">true</font>' : '<font color="#ff0000">false</font>')} to ${(Debug[d] ? '<font color="#00ff00">true</font>' : '<font color="#ff0000">false</font>')}`;
+                }
+            }
+            return 'No matching debug option';
+
+        }
+
     }
 }
 

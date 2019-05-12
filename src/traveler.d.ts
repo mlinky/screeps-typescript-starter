@@ -63,5 +63,9 @@ interface RoomMemory {
     avoid: number;
 }
 
+interface Memory {
+    empire: any;
+}
+
 type Coord = { x: number, y: number };
 type HasPos = { pos: RoomPosition }

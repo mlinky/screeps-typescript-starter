@@ -1,11 +1,13 @@
 import { CreepClaimer } from 'creeps/claimer';
 import { CreepHauler } from 'creeps/hauler';
 import { CreepMiner } from 'creeps/miner';
+import { CreepReserver } from 'creeps/reserver';
 import { Roles } from 'creeps/setups';
 import { CreepUpgrader } from 'creeps/upgrader';
 import { CreepWorker } from 'creeps/worker';
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
+import { Debug } from 'settings';
 import { Perfmon } from "utils/perfmon";
 import { _REFRESH, checkRefresh } from 'utils/refresh';
 import { Creeps, MyCreep } from "../creeps/creep";
@@ -15,7 +17,6 @@ import { Clusters, MyCluster } from "./cluster";
 import { MyRoom, Rooms } from './room';
 
 // State.ts - core gamestate to store on the heap
-const _DEBUG_GAMESTATE: boolean = false;
 
 @profile
 export class GameState {
@@ -24,6 +25,9 @@ export class GameState {
     public rooms: { [roomName: string]: MyRoom } = {};
     public flags: { [flagName: string]: MyFlag } = {};
     public perfmon: Perfmon;
+
+    public buildCount: number = 0;
+    public buildFlag: boolean = false;
 
     public initialised: boolean;
 
@@ -34,7 +38,7 @@ export class GameState {
 
     public initState(): void {
 
-        if (_DEBUG_GAMESTATE) {
+        if (Debug.gamestate) {
             // Start a performance timer
             this.perfmon.start();
         }
@@ -45,12 +49,12 @@ export class GameState {
 
         Flags.check(true);
 
-        if (_DEBUG_GAMESTATE) {
+        if (Debug.gamestate) {
             // Stop the timer
             this.perfmon.stop();
 
             // Log that a refresh has happened
-            log.debug(`Gamestate refresh completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
+            log.debug(`Gamestate refresh completed using ${this.perfmon.getUsed()} CPU.`, Debug.gamestate);
         }
 
         this.initialised = true;
@@ -59,7 +63,7 @@ export class GameState {
 
     public initCreeps() {
 
-        if (_DEBUG_GAMESTATE) {
+        if (Debug.gamestate) {
             // Start a performance timer
             this.perfmon.start();
         }
@@ -70,12 +74,12 @@ export class GameState {
             this.addCreep(c);
         }
 
-        if (_DEBUG_GAMESTATE) {
+        if (Debug.gamestate) {
             // Stop the timer
             this.perfmon.stop();
 
             // Log that a refresh has happened
-            log.debug(`Creep initialise completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
+            log.debug(`Creep initialise completed using ${this.perfmon.getUsed()} CPU.`, Debug.gamestate);
         }
     }
 
@@ -98,8 +102,12 @@ export class GameState {
                 this.creeps[creep.name] = new CreepUpgrader(creep);
                 break;
             }
-            case Roles.claim: {
+            case Roles.claimer: {
                 this.creeps[creep.name] = new CreepClaimer(creep);
+                break;
+            }
+            case Roles.reserver: {
+                this.creeps[creep.name] = new CreepReserver(creep);
                 break;
             }
             default: {
@@ -122,7 +130,7 @@ export class GameState {
 
     public initClusters() {
 
-        if (_DEBUG_GAMESTATE) {
+        if (Debug.gamestate) {
             // Start a performance timer
             this.perfmon.start();
         }
@@ -158,16 +166,19 @@ export class GameState {
 
         }
 
-        if (_DEBUG_GAMESTATE) {
+        if (Debug.gamestate) {
             // Stop the timer
             this.perfmon.stop();
 
             // Log that a refresh has happened
-            log.debug(`Cluster initialise completed using ${this.perfmon.getUsed()} CPU.`, _DEBUG_GAMESTATE);
+            log.debug(`Cluster initialise completed using ${this.perfmon.getUsed()} CPU.`, Debug.gamestate);
         }
     }
 
     public run() {
+
+        // Capture buildCount
+        this.buildCount = Object.keys(Game.constructionSites).length;
 
         // Tidy up creeps
         Creeps.tidy();

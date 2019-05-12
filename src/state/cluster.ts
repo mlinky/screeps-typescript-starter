@@ -1,6 +1,7 @@
 import { Task } from "creep-tasks/Task";
-import { CreepRequest, RequestPriority } from "creeps/creepRequest";
+import { CreepRequest } from "creeps/creepRequest";
 import { CreepHauler } from "creeps/hauler";
+import { CreepManager } from "creeps/manager";
 import { CreepMiner } from "creeps/miner";
 import { Roles } from "creeps/setups";
 import { CreepUpgrader } from "creeps/upgrader";
@@ -8,7 +9,8 @@ import { CreepWorker } from "creeps/worker";
 import { gameState } from "defs";
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
-import { isUndefined } from "util";
+import { Debug } from "settings";
+import { SpawnPriority } from "utils/priorities";
 import { _REFRESH, checkRefresh } from "utils/refresh";
 import { RoomPlanner } from "utils/roomPlanner";
 import { MyExtension } from "./extension";
@@ -17,11 +19,9 @@ import { MyLink } from "./link";
 import { MyRampart } from "./ramparts";
 import { MyRoom } from "./room";
 import { MySpawn } from "./spawn";
+import { MyStorage } from "./storage";
 import { MyTower } from "./tower";
 import { MyWall } from "./wall";
-
-const _DEBUG_CLUSTER: boolean = false;
-const _DEBUG_REQUESTS: boolean = true;
 
 @profile
 export abstract class Clusters {
@@ -54,8 +54,10 @@ export class MyCluster {
     public links: { [linkID: string]: MyLink } = {};
     public walls: { [sourceID: string]: MyWall } = {};
     public ramparts: { [sourceID: string]: MyRampart } = {};
+    public storage?: MyStorage;
     public creepRequests: CreepRequest[] = [];
 
+    public remotes: number = 0;
     public hasSpawns: boolean = false;
     public canSpawn: boolean = false;
     public tasks: { [digest: string]: Task } = {};
@@ -85,6 +87,7 @@ export class MyCluster {
         this.updateLinks();
         this.updateRamparts();
         this.updateWalls();
+        this.updateStorage();
 
         // Get a list of rooms for this cluster
         const roomList = _.filter(gameState.rooms, (room) => room.clusterName === this.clusterName);
@@ -180,7 +183,14 @@ export class MyCluster {
     }
 
     public updateStorage() {
-        throw new Error("Method not implemented.");
+
+        // Cache the storage object
+        if (!this.storage) {
+            if (Game.rooms[this.clusterName] && Game.rooms[this.clusterName].storage) {
+                this.storage = new MyStorage(Game.rooms[this.clusterName].storage!);
+            }
+        }
+
     }
 
     public updateTowers() {
@@ -239,14 +249,15 @@ export class MyCluster {
         }
     }
 
-    public checkAndRequest(role: string, room: string, required: number, requestPriority: string, firstRequestPriority: string = requestPriority): void {
+    public checkAndRequest(role: string, room: string, required: number, requestPriority: number, firstRequestPriority: number = requestPriority): void {
 
         const creeps = _.filter(gameState.creeps, c => c.role === role && c.workRoom === room && c.homeRoom === this.clusterName);
+        const realPriority: number = (creeps.length === 0 ? firstRequestPriority : requestPriority);
 
         // Only have one outstanding request per remote
-        if (creeps.length < required && !this.requestExists(room, role, requestPriority)) {
-            log.debug(`Creep ${role} requested for room ${room} in cluster ${this.clusterName} creep count ${creeps.length} required ${required} request exists? ${this.requestExists(room, role, requestPriority)}`, _DEBUG_REQUESTS);
-            this.requestCreep(room, role, (creeps.length === 0 ? firstRequestPriority : requestPriority));
+        if (creeps.length < required && !this.requestExists(room, role, realPriority)) {
+            log.debug(`Creep ${role} requested for room ${room} in cluster ${this.clusterName} creep count ${creeps.length} required ${required} request exists? ${this.requestExists(room, role, realPriority)}`, Debug.requests);
+            this.requestCreep(room, role, realPriority);
         }
     }
 
@@ -263,26 +274,31 @@ export class MyCluster {
     // Check creep counts
     private checkCreeps() {
 
-        log.debug(`Check creeps - cluster ${this.clusterName}, canSpawn ${this.canSpawn}, hasSpawns ${this.hasSpawns}`, _DEBUG_CLUSTER)
+        log.debug(`Check creeps - cluster ${this.clusterName}, canSpawn ${this.canSpawn}, hasSpawns ${this.hasSpawns}`, Debug.cluster)
 
         // Miners
         if (checkRefresh(_REFRESH.drone)) {
-            this.checkAndRequest(Roles.drone, this.clusterName, CreepMiner.required(this), RequestPriority[6], RequestPriority[9]);
+            this.checkAndRequest(Roles.drone, this.clusterName, CreepMiner.required(this), SpawnPriority.cluster.miner, SpawnPriority.cluster.firstMiner);
         }
 
         // Haulers
         if (checkRefresh(_REFRESH.transporter)) {
-            this.checkAndRequest(Roles.transporter, this.clusterName, CreepHauler.required(this), RequestPriority[6], RequestPriority[7]);
+            this.checkAndRequest(Roles.transporter, this.clusterName, CreepHauler.required(this), SpawnPriority.cluster.transport, SpawnPriority.cluster.firstTransport);
         }
 
         // Workers
         if (checkRefresh(_REFRESH.worker)) {
-            this.checkAndRequest(Roles.worker, this.clusterName, CreepWorker.required(this), RequestPriority[5], RequestPriority[7]);
+            this.checkAndRequest(Roles.worker, this.clusterName, CreepWorker.required(this), SpawnPriority.cluster.worker, SpawnPriority.cluster.firstWorker);
         }
 
         // Upgraders
         if (checkRefresh(_REFRESH.upgrader)) {
-            this.checkAndRequest(Roles.upgrader, this.clusterName, CreepUpgrader.required(this), RequestPriority[5], RequestPriority[7]);
+            this.checkAndRequest(Roles.upgrader, this.clusterName, CreepUpgrader.required(this), SpawnPriority.cluster.upgrader);
+        }
+
+        // Managers
+        if (checkRefresh(_REFRESH.manager)) {
+            // this.checkAndRequest(Roles.manager, this.clusterName, CreepManager.required(this), SpawnPriority.base.manager);
         }
 
         return;
@@ -341,66 +357,48 @@ export class MyCluster {
                 // Spawn is valid and not spawning
                 if (s && !s.spawning) {
                     // Spawn based on priority
-                    switch (true) {
-                        case spawnByPriority(this, RequestPriority[9], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[8], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[7], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[6], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[5], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[4], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[3], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[2], s): {
-                            break;
-                        }
-                        case spawnByPriority(this, RequestPriority[1], s): {
-                            break;
-                        }
-                    }
+                    spawnNextPriority(this, s);
                 }
             }
         }
 
         return;
 
-        function spawnByPriority(cluster: MyCluster, priority: string, spawn: StructureSpawn): boolean {
+        function spawnNextPriority(cluster: MyCluster, spawn: StructureSpawn): boolean {
             let spawnReturn: { result: boolean, creepName: string } = { result: false, creepName: '' };
-            const index: number = cluster.creepRequests.findIndex((request: CreepRequest) => request.priority === priority);
 
-            if (index >= 0) {
+            let minPriority: number = SpawnPriority.maximum;
+            let minIndex: number = -1;
 
-                log.debug(`Item ${index} selected for spawning`, _DEBUG_REQUESTS);
+            // tslint:disable-next-line:prefer-for-of
+            for (let i = 0; i < cluster.creepRequests.length; i++) {
+                if (cluster.creepRequests[i].priority < minPriority) {
+                    minPriority = cluster.creepRequests[i].priority;
+                    minIndex = i;
+                }
+
+            }
+
+            if (minIndex > -1) {
+                log.debug(`Next to spawn - ${cluster.creepRequests[minIndex].creepRole} room ${cluster.creepRequests[minIndex].workRoom} priority ${cluster.creepRequests[minIndex].priority} `, Debug.requests);
 
                 // Action the request
-                if (!cluster.creepRequests[index].testRequest(spawn)) {
+                if (!cluster.creepRequests[minIndex].testRequest(spawn)) {
                     // Can't spawn it yet - return true and wait for next tick
                     return true;
                 }
 
-                spawnReturn = cluster.creepRequests[index].actionRequest(spawn);
+                spawnReturn = cluster.creepRequests[minIndex].actionRequest(spawn);
 
                 if (spawnReturn.result && spawnReturn.creepName !== '') {
 
-                    log.debug(`Spawn returned true`, _DEBUG_REQUESTS);
+                    log.debug(`Spawn returned true`, Debug.requests);
 
                     // Add the creep to gamestate
                     gameState.addCreep(Game.creeps[spawnReturn.creepName]);
 
                     // Remove request array element
-                    cluster.creepRequests.splice(index, 1);
+                    cluster.creepRequests.splice(minIndex, 1);
 
                 }
 
@@ -409,10 +407,11 @@ export class MyCluster {
             return spawnReturn.result;
 
         }
+
     }
 
     // Make a creep request
-    public requestExists(requestRoom: string, requestRole: string, priority: string): boolean {
+    public requestExists(requestRoom: string, requestRole: string, priority: number): boolean {
 
         const requests = this.creepRequests.find(r => r.spawnRoom === this.clusterName && r.workRoom === requestRoom && r.creepRole === requestRole && r.priority === priority);
 
@@ -421,10 +420,12 @@ export class MyCluster {
             return true;
         }
 
+        log.debug(`No requests found for role ${requestRole}, spawn ${this.clusterName}, room ${requestRoom}, priority ${priority}`, Debug.requests);
+
         return false;
     }
 
-    public requestCreep(requestRoom: string, requestRole: string, priority: string): void {
+    public requestCreep(requestRoom: string, requestRole: string, priority: number): void {
 
         // Add request
         this.creepRequests.push(new CreepRequest(this.clusterName, requestRoom, requestRole, priority));

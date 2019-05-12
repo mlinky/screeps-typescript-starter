@@ -49,14 +49,13 @@ const layout: { [rcl: number]: Layout } = {
             },
             'container': { 'pos': [{ x: 0, y: -1 }] },
             'tower': { 'pos': [{ x: 1, y: 0 }] },
-            'road': { 'pos': [{ x: -1, y: 0 }, { x: -2, y: -1 }, { x: -3, y: -2 }, { x: -2, y: 1 }, { x: -3, y: 2 }, { x: -4, y: -1 }, { x: -4, y: 0 }, { x: -4, y: 1 }, { x: -3, y: -3 }, { x: -2, y: -4 }, { x: -1, y: -5 }, { x: 0, y: -5 }, { x: 1, y: -4 }, { x: 2, y: -3 }, { x: 1, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 3 }, { x: 1, y: 4 }, { x: 0, y: 5 }, { x: -1, y: 5 }, { x: -2, y: 4 }, { x: -3, y: 3 }, { x: -5, y: -2 }, { x: -5, y: -3 }, { x: -4, y: -4 }, { x: -4, y: -5 }, { x: -3, y: -6 }, { x: -2, y: -6 }, { x: -5, y: 2 }, { x: -5, y: 3 }, { x: -4, y: 4 }, { x: -4, y: 5 }, { x: -3, y: 6 }, { x: -2, y: 6 }, { x: 1, y: 1 }, { x: 1, y: -1 }, { x: 2, y: -1 }, { x: 3, y: -1 }, { x: 4, y: -1 }, { x: 3, y: -2 }, { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 3, y: 2 }, { x: 4, y: 1 }, { x: 5, y: 0 }, { x: 3, y: -4 }, { x: 4, y: -5 }, { x: 3, y: -6 }, { x: 4, y: -7 }, { x: 5, y: -7 }, { x: 5, y: -5 }, { x: 6, y: -6 }, { x: 7, y: -6 }, { x: 8, y: -5 }, { x: 8, y: -4 }, { x: 7, y: -3 }, { x: 6, y: -4 }, { x: 7, y: -2 }, { x: 6, y: -1 }, { x: 1, y: -6 }, { x: 2, y: -7 }, { x: 0, y: -7 }, { x: -1, y: -7 }, { x: 9, y: -2 }, { x: 9, y: -3 }, { x: 8, y: -1 }, { x: 8, y: 0 }, { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 5 }, { x: 6, y: 1 }, { x: 7, y: 1 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }, { x: 7, y: 6 }, { x: 7, y: 5 }] }
+            'road': { 'pos': [{ x: -1, y: 0 }, { x: -2, y: -1 }, { x: -3, y: -2 }, { x: -2, y: 1 }, { x: -3, y: 2 }, { x: -4, y: -1 }, { x: -4, y: 0 }, { x: -4, y: 1 }, { x: -3, y: -3 }, { x: -2, y: -4 }, { x: -1, y: -5 }, { x: 0, y: -5 }, { x: 1, y: -4 }, { x: 2, y: -3 }, { x: 1, y: -2 }, { x: 0, y: -1 }, { x: 0, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 3 }, { x: 1, y: 4 }, { x: 0, y: 5 }, { x: -1, y: 5 }, { x: -2, y: 4 }, { x: -3, y: 3 }, { x: 1, y: 1 }, { x: 1, y: -1 }, { x: 2, y: -1 }, { x: 3, y: -1 }, { x: 4, y: -1 }, { x: 3, y: -2 }, { x: 3, y: 0 }, { x: 3, y: 1 }, { x: 3, y: 2 }, { x: 4, y: 1 }, { x: 5, y: 0 }, { x: 3, y: -4 }, { x: 4, y: -5 }, { x: 3, y: -6 }, { x: 5, y: -5 }, { x: 6, y: -6 }, { x: 7, y: -6 }, { x: 8, y: -5 }, { x: 8, y: -4 }, { x: 7, y: -3 }, { x: 6, y: -4 }, { x: 7, y: -2 }, { x: 6, y: -1 }, { x: 1, y: -6 }, { x: 8, y: -1 }, { x: 8, y: 0 }, { x: 8, y: 1 }, { x: 8, y: 2 }, { x: 8, y: 3 }, { x: 8, y: 4 }, { x: 8, y: 5 }, { x: 6, y: 1 }, { x: 7, y: 1 }, { x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }, { x: 7, y: 6 }, { x: 7, y: 5 }] }
         }
     }
 }
 
 
 export abstract class RoomPlanner {
-    private static buildCount: number = 0;
 
     public static planRoom(cluster: MyCluster) {
 
@@ -67,9 +66,6 @@ export abstract class RoomPlanner {
             log.error('RoomPlanner called without cluster origin set up');
             return;
         }
-
-        // Set buildCount to the number of
-        this.buildCount = Object.keys(Game.constructionSites).length;
 
         // Check for a controller
         if (room && room.controller) {
@@ -82,7 +78,7 @@ export abstract class RoomPlanner {
             for (const p of layout[rcl].structs[s].pos) {
 
                 // Exit if we already have 80 construction sites
-                if (this.buildCount > 80) {
+                if (gameState.buildCount > 10) {
                     return;
                 }
 
@@ -118,13 +114,20 @@ export abstract class RoomPlanner {
                 }
             }
         }
+
     }
 
     private static checkPos(room: Room, cluster: MyCluster, coord: Coord, sType: BuildableStructureConstant): void {
         // Look for structures at the location
         const checkX: number = cluster.origin!.x + coord.x;
         const checkY: number = cluster.origin!.y + coord.y;
-        const r = room.lookForAt(LOOK_STRUCTURES, checkX, checkY);
+        this.checkAndBuild(room, cluster.origin!.x + coord.x, cluster.origin!.y + coord.y, sType)
+        return;
+    }
+
+    public static checkAndBuild(room: Room, x: number, y: number, sType: BuildableStructureConstant): void {
+        // Look for structures at the location
+        const r = room.lookForAt(LOOK_STRUCTURES, x, y);
 
         // Check the results
         for (const e of r) {
@@ -134,26 +137,28 @@ export abstract class RoomPlanner {
             }
         }
 
-        const c = room.lookForAt(LOOK_CONSTRUCTION_SITES, checkX, checkY);
+        const c = room.lookForAt(LOOK_CONSTRUCTION_SITES, x, y);
 
         for (const e of c) {
             if (e.structureType === sType) {
-                // The correct structure is being built
+                // The correct structure is being built - set the build flag
+                gameState.buildFlag = true;
                 return;
             }
         }
 
-        const pos: RoomPosition = new RoomPosition(checkX, checkY, room.name);
+        const pos: RoomPosition = new RoomPosition(x, y, room.name);
 
         const result = pos.createConstructionSite(sType);
 
         if (result !== OK) {
-            log.error(`Failed to build${sType}: ${result}`);
+            log.error(`Failed to build ${sType} ${pos.roomName} ${pos.x} ${pos.y}: ${result}`);
             return;
         }
 
-        // Increment the build count
-        this.buildCount++
+        // Increment the build count and set the build flag
+        gameState.buildFlag = true;
+        gameState.buildCount++
         return;
     }
 }

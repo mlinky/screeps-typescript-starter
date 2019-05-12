@@ -8,6 +8,8 @@ export class MyController extends MyDefault {
     public controller: StructureController;
     public container?: StructureContainer;
     public room: string;
+    public pos: RoomPosition;
+    private updateTick: number;
 
     constructor(controller: StructureController) {
 
@@ -15,12 +17,13 @@ export class MyController extends MyDefault {
 
         this.controller = controller;
         this.room = controller.room.name;
+        this.pos = controller.pos;
+        this.updateTick = Game.time;
 
         // Only do a container for cluster hub rooms
         if (gameState.rooms[this.room].clusterHub) {
             this.checkContainer();
         }
-
     }
 
     public checkContainer() {
@@ -31,7 +34,7 @@ export class MyController extends MyDefault {
             return;
         }
 
-        const surroundings: LocationDetails[] = Map.lookAround(this.controller.pos, 3);
+        const surroundings: LocationDetails[] = Map.lookAround(this.controller.pos, 2);
 
         for (const s of surroundings) {
             for (const l of s.results) {
@@ -64,6 +67,20 @@ export class MyController extends MyDefault {
             }
 
         }
+    }
+
+    public update() {
+        if (this.updateTick < Game.time) {
+            this.controller = Game.getObjectById(this.id) as StructureController;
+        }
+    }
+
+    public level(): number {
+
+        this.update();
+
+        return this.controller.level;
+
     }
 
 }

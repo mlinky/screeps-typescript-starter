@@ -4,10 +4,9 @@ import { MyCreep } from "creeps/creep";
 import { gameState } from "defs";
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
+import { Debug } from "settings";
 import { MyCluster } from "state/cluster";
 import { MySource } from "state/source";
-
-const _DEBUG_MINER: boolean = false;
 
 @profile
 export class CreepMiner extends MyCreep {
@@ -19,15 +18,29 @@ export class CreepMiner extends MyCreep {
 
     public run() {
 
-        log.debug(`Miner ${this.name} running`, _DEBUG_MINER);
+        log.debug(`Miner ${this.name} running`, Debug.miner);
+        // Set max targets
+        let targetMax: number = 1;
 
+        if (Game.rooms[this.homeRoom]) {
+            // Increase the miner count for
+            if (Game.rooms[this.homeRoom].energyCapacityAvailable < 400) {
+                // Super low level - spawn max of 3*2 work parts
+                targetMax = 3;
+            } else if (Game.rooms[this.homeRoom].energyCapacityAvailable < 800) {
+                // Cannot spawn a full size miner - spwan 2*3 work parts
+                targetMax = 2;
+            }
+        }
+
+        // Assign a task
         if (!this.creep.task) {
-            log.debug(`Miner ${this.name} has no task`, _DEBUG_MINER);
+            log.debug(`Miner ${this.name} has no task`, Debug.miner);
 
             if (gameState.rooms[this.workRoom]) {
                 for (const s of Object.values(gameState.rooms[this.workRoom].sources)) {
                     const r: RoomObject | null = Game.getObjectById(s.id);
-                    if (r && r.targetedBy.length === 0) {
+                    if (r && r.targetedBy.length < targetMax && r.targetedBy.length < s.miningSpots.length) {
                         this.creep.task = Tasks.harvest(r as harvestTargetType);
                     }
                 }
@@ -41,7 +54,8 @@ export class CreepMiner extends MyCreep {
             // See if we're on the container
             let runTask: boolean = true;
 
-            if (gameState.rooms[this.workRoom]) {
+            // Only force sitting on the container when there's a single miner
+            if (gameState.rooms[this.workRoom] && targetMax === 1) {
                 if (!this.onContainer) {
                     const s: Source | undefined = this.creep.task.target as Source;
 
@@ -69,11 +83,28 @@ export class CreepMiner extends MyCreep {
     public static required(cluster: MyCluster): number {
         // How many miners required for the cluster
         // Remote rooms request creeps through flag handling
-
-        if (gameState.rooms[cluster.clusterName] && gameState.rooms[cluster.clusterName].sources) {
-            return Object.keys(gameState.rooms[cluster.clusterName].sources).length;
+        if (Game.rooms[cluster.clusterName]) {
+            if (Game.rooms[cluster.clusterName].energyCapacityAvailable < 400) {
+                // Super low level - spawn max of 3*2 work parts
+                return totalSpots(3);
+            } else if (Game.rooms[cluster.clusterName].energyCapacityAvailable < 800) {
+                // Cannot spawn a full size miner - spwan 2*3 work parts
+                return totalSpots(2);
+            } else {
+                // Just spawn a full size miner for each source
+                return Object.keys(gameState.rooms[cluster.clusterName].sources).length;
+            }
         }
 
         return 0;
+
+        function totalSpots(maxRequired: number): number {
+            let miningSpots: number = 0;
+            for (const s of Object.values(gameState.rooms[cluster.clusterName].sources)) {
+                miningSpots += (s.miningSpots.length >= maxRequired ? maxRequired : s.miningSpots.length);
+            }
+            return miningSpots;
+        }
+
     }
 }

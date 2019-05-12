@@ -3,11 +3,10 @@ import { MyCreep } from "creeps/creep";
 import { gameState } from "defs";
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
-import { Debug } from "settings";
 import { MyCluster } from "state/cluster";
 
 @profile
-export class CreepHauler extends MyCreep {
+export class CreepManager extends MyCreep {
 
     constructor(creep: Creep) {
         super(creep);
@@ -15,7 +14,7 @@ export class CreepHauler extends MyCreep {
 
     public run() {
 
-        // log.info('Hauler running');
+        // log.info('Manager running');
         if (this.creep.isIdle) {
             this.newTask();
         }
@@ -26,14 +25,10 @@ export class CreepHauler extends MyCreep {
 
     private newTask() {
 
-        // log.info('running newTask');
-        // log.info(`Creep energy ${this.creep.carry.energy}`);
-        // log.info(`Creep energy ${Game.creeps[this.name].carry.energy}`);
-
         if (this.creep.carry.energy > 0) {
             // Deliver energy to spawn, extension, storage
             // log.info('setting transfer');
-            const t = this.findEnergyDestination(gameState.rooms[this.homeRoom]);
+            const t = this.findManagerDestination(gameState.rooms[this.homeRoom]);
 
             if (t) {
                 this.creep.task = Tasks.transfer(t);
@@ -43,39 +38,35 @@ export class CreepHauler extends MyCreep {
         } else {
             // Go get energy
             // log.info('setting collect');
-            this.energyPickup(this.workRoom);
+            if (this.creep.room.storage) {
+                this.creep.task = Tasks.withdraw(this.creep.room.storage, RESOURCE_ENERGY)
+            }
         }
     }
 
     public static required(cluster: MyCluster): number {
         // How many haulers required for the cluster
-        log.debug(`Calculating required haulers for cluster ${cluster.clusterName}`, Debug.hauler)
         if (gameState.rooms[cluster.clusterName].controller) {
-            log.debug(`Controller ID being tested for level is ${gameState.rooms[cluster.clusterName].controller!.id} with level ${gameState.rooms[cluster.clusterName].controller!.level()}`, Debug.hauler)
             switch (gameState.rooms[cluster.clusterName].controller!.level()) {
-                case 1: {
-                    return 2;
-                }
-                case 2: {
-                    return 2;
-                }
+                case 1:
+                case 2:
                 case 3: {
-                    return 3;
+                    return 1;
                 }
                 case 4: {
-                    return 2;
+                    return 1;
                 }
                 case 5: {
-                    return 2;
+                    return 1;
                 }
                 case 6: {
-                    return 2;
+                    return 1;
                 }
                 case 7: {
-                    return 2;
+                    return 1;
                 }
                 case 8: {
-                    return 2;
+                    return 1;
                 }
                 default: {
                     return 3;
@@ -83,7 +74,6 @@ export class CreepHauler extends MyCreep {
 
             }
         }
-        log.debug(`Invalid controller property for cluster ${cluster.clusterName}`, Debug.hauler)
-        return 2;
+        return 0;
     }
 }

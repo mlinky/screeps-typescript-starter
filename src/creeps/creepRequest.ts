@@ -1,22 +1,9 @@
 import { gameState } from 'defs';
 import { log } from 'log/log';
+import { Debug } from 'settings';
 import { profile } from '../profiler/decorator';
 import { CreepSetup } from './creepSetup';
 import { Roles, Setups } from './setups';
-
-const _DEBUG_SPAWN: boolean = false;
-
-export const RequestPriority = {
-    1: '1',
-    2: '2',
-    3: '3',
-    4: '4',
-    5: '5',
-    6: '6',
-    7: '7',
-    8: '8',
-    9: '9'
-}
 
 @profile
 export class CreepRequest {
@@ -24,9 +11,9 @@ export class CreepRequest {
     public spawnRoom: string;
     public workRoom: string;
     public creepRole: string;
-    public priority: string;
+    public priority: number;
 
-    constructor(spawnRoom: string, workRoom: string, creepRole: string, priority: string) {
+    constructor(spawnRoom: string, workRoom: string, creepRole: string, priority: number) {
         this.spawnRoom = spawnRoom;
         this.workRoom = workRoom;
         this.creepRole = creepRole;
@@ -95,7 +82,7 @@ export class CreepRequest {
                 break;
         }
 
-        log.debug(`Body parts ${f}`, _DEBUG_SPAWN);
+        log.debug(`Body parts ${f}`, Debug.spawn);
 
         return;
 
@@ -116,22 +103,28 @@ export class CreepRequest {
 
         switch (this.creepRole) {
             case Roles.transporter:
-                // Don't wait for spawn to get filled if we have no transporters in a cluster room
-                if (this.spawnRoom === this.workRoom) {
-                    const creeps = _.filter(gameState.creeps, c => c.role === this.creepRole && c.workRoom === this.workRoom && c.homeRoom === this.workRoom);
-                    if (creeps.length === 0) {
-                        e = room.energyAvailable;
-                    }
-                }
-
+                e = adjustEnergy(this);
                 s = Setups.transporters.default;
                 break;
 
             case Roles.drone:
-                s = Setups.drones.miners.default;
+                e = adjustEnergy(this);
+
+                if (e < 400) {
+                    // Super low level - spawn max of 3*2 work parts
+                    s = Setups.drones.miners.default;
+                } else if (e < 900) {
+                    // Cannot spawn a full size miner - spwan 2*3 work parts
+                    s = Setups.drones.miners.lowLvl;
+                } else {
+                    // Just spawn a full size miner for each source
+                    s = Setups.drones.miners.default;
+                }
+
                 break;
 
             case Roles.worker:
+                e = adjustEnergy(this);
                 s = Setups.workers.default;
                 break;
 
@@ -139,8 +132,16 @@ export class CreepRequest {
                 s = Setups.upgraders.default;
                 break;
 
-            case Roles.claim:
+            case Roles.reserver:
                 s = Setups.infestors.reserve;
+                break;
+
+            case Roles.claimer:
+                s = Setups.infestors.claim;
+                break;
+
+            case Roles.manager:
+                s = Setups.managers.default;
                 break;
 
             default:
@@ -149,6 +150,18 @@ export class CreepRequest {
         }
 
         return s.generateBody(e);
+
+        function adjustEnergy(request: CreepRequest) {
+            // Don't wait for spawn to get filled if we have no transporters in a cluster room
+            if (request.spawnRoom === request.workRoom) {
+                const creeps = _.filter(gameState.creeps, c => c.role === request.creepRole && c.workRoom === request.workRoom && c.homeRoom === request.workRoom);
+                if (creeps.length === 0) {
+                    return room.energyAvailable;
+                }
+            }
+            return room.energyCapacityAvailable;
+        }
+
 
     }
 
