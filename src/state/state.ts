@@ -1,5 +1,6 @@
 import { CreepClaimer } from 'creeps/claimer';
 import { CreepHauler } from 'creeps/hauler';
+import { CreepManager } from 'creeps/manager';
 import { CreepMiner } from 'creeps/miner';
 import { CreepReserver } from 'creeps/reserver';
 import { Roles } from 'creeps/setups';
@@ -108,6 +109,10 @@ export class GameState {
             }
             case Roles.reserver: {
                 this.creeps[creep.name] = new CreepReserver(creep);
+                break;
+            }
+            case Roles.manager: {
+                this.creeps[creep.name] = new CreepManager(creep);
                 break;
             }
             default: {

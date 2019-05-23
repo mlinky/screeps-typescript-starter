@@ -1,5 +1,6 @@
 import { gameState } from "defs";
 import { Debug } from "settings";
+import { Visuals } from "state/room";
 import { log } from "./log";
 
 export class MyConsole {
@@ -117,9 +118,32 @@ export class MyConsole {
                 }
             }
             return 'No matching debug option';
-
         }
-
     }
+
+    public static visuals(toggle: string): string {
+        if (toggle === '') {
+            // List possible debug items
+            for (const d in Visuals) {
+                let font: string = '#ff0000';
+                if (Visuals[d]) {
+                    font = '#00ff00'
+                }
+                console.log(`${d} <font color="#${font}">${Visuals[d]}</font>`);
+            }
+            return 'blank toggle';
+
+        } else {
+            for (const d in Visuals) {
+                if (d === toggle) {
+                    // Found the flag to switch
+                    Visuals[d] = !Visuals[d];
+                    return `Changed Visuals[${d}] from ${(!Visuals[d] ? '<font color="#00ff00">true</font>' : '<font color="#ff0000">false</font>')} to ${(Visuals[d] ? '<font color="#00ff00">true</font>' : '<font color="#ff0000">false</font>')}`;
+                }
+            }
+            return 'No matching visuals option';
+        }
+    }
+
 }
 

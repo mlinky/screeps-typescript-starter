@@ -36,7 +36,7 @@ export abstract class RoadPlanner {
                     for (const s of Object.values(room.sources)) {
 
                         if (s.container) {
-                            const path: PathFinderPath = PathFinder.search(room.controller.pos, s.container.pos)
+                            const path: PathFinderPath = PathFinder.search(room.controller.pos, { pos: s.container.pos, range: 1 })
 
                             for (const p of path.path) {
 
@@ -59,7 +59,7 @@ export abstract class RoadPlanner {
 
                 // Roads from spawn to controller
                 if (gameState.buildCount < 10 && room.controller.container) {
-                    const path: PathFinderPath = PathFinder.search(gameState.clusters[room.roomName].origin!, room.controller.container.pos)
+                    const path: PathFinderPath = PathFinder.search(gameState.clusters[room.roomName].origin!, { pos: room.controller.container.pos, range: 1 })
 
                     for (const p of path.path) {
 
@@ -85,7 +85,7 @@ export abstract class RoadPlanner {
         function fromPosToSources(pos: RoomPosition) {
             for (const s of Object.values(room.sources)) {
                 if (s.container) {
-                    const path: PathFinderPath = PathFinder.search(pos, s.container.pos)
+                    const path: PathFinderPath = PathFinder.search(pos, { pos: s.container.pos, range: 1 })
 
                     for (const p of path.path) {
 

@@ -12,6 +12,7 @@ export const _REFRESH = {
     // Room planner
     flags: 1,
     roadPlanner: 100,
+    roomAverages: 500,
     roomPlanner: 100,
 };
 

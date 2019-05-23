@@ -238,7 +238,8 @@ export abstract class Task implements ITask {
 
 	// Execute this task each tick. Returns nothing unless work is done.
 	run(): number | undefined {
-		if (this.creep.pos.inRangeTo(this.targetPos, this.settings.targetRange) && !this.creep.pos.isEdge) {
+		const inRange: boolean = this.creep.pos.inRangeTo(this.targetPos, this.settings.targetRange);
+		if (inRange && !this.creep.pos.isEdge) {
 			if (this.settings.workOffRoad) {
 				// Move to somewhere nearby that isn't on a road
 				this.parkCreep(this.creep, this.targetPos, true);
@@ -249,6 +250,12 @@ export abstract class Task implements ITask {
 			}
 			return result;
 		} else {
+			if (inRange && this.creep.pos.isEdge) {
+				// Try a different range
+				if (this.options && this.options.moveOptions && this.options.moveOptions.range && this.options.moveOptions.range > 0) {
+					this.options.moveOptions.range -= 1;
+				}
+			}
 			this.moveToTarget();
 		}
 		return;

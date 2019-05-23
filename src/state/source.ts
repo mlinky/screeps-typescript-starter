@@ -98,7 +98,7 @@ export class MySource extends MyDefault {
             for (const l of s.results) {
                 if (l.type === LOOK_CONSTRUCTION_SITES) {
                     if (l.structure && l.structure.structureType === STRUCTURE_CONTAINER) {
-                        this.container = Game.getObjectById(l.structure.id) as StructureContainer;
+                        this.container = l.structure as StructureContainer;
                         return true;
                     }
                 }

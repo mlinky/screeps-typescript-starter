@@ -11,6 +11,14 @@ import { MyHostileCreep } from "./hostilerCreep";
 import { MyRoad } from "./road";
 import { MySource } from "./source";
 
+export let Visuals: { [name: string]: boolean } = {
+    creeps: true,
+    energy: true,
+    hostiles: true,
+    resources: true,
+    sources: true,
+}
+
 @profile
 export abstract class Rooms {
 
@@ -41,6 +49,10 @@ export class MyRoom {
     public roads: { [sourceID: string]: MyRoad } = {};
 
     public hostiles: { [creepID: string]: MyHostileCreep } = {};
+
+    public haulDemand: number = 0; // Rolling average of hauling demand
+    public haulersRequired: number = 2;
+    public upgradersRequired: number = 2;
 
     public terrain: RoomTerrain;
 
@@ -112,7 +124,11 @@ export class MyRoom {
         }
 
         this.planRoads()
-        this.updateHostiles();
+
+        this.updateAverages()
+
+        this.actionHostiles();
+
         this.runVisuals();
 
     }
@@ -125,12 +141,58 @@ export class MyRoom {
         }
     }
 
+    private updateAverages() {
+        if (checkRefresh(_REFRESH.roomAverages)) {
+            if (this.haulDemand === 0) {
+                this.haulDemand = this.totalDroppedEnergy() + this.totalContainerEnergy();
+            } else {
+                this.haulDemand = (this.haulDemand * 0.9) + (0.1 * (this.totalDroppedEnergy() + this.totalContainerEnergy()));
+            }
+
+            if (this.haulDemand < 1000) {
+                // Probably too many haulers
+                this.haulersRequired = Math.max(this.haulersRequired - 1, 2);
+                this.upgradersRequired = Math.max(this.upgradersRequired - 1, 2);
+            } else if (this.haulDemand > 4000) {
+                // Too few haulers
+                this.haulersRequired = Math.min(this.haulersRequired + 1, 6);
+                this.upgradersRequired = Math.min(this.upgradersRequired + 1, 4);
+            }
+            log.debug(`Room ${this.roomName} - haul demand ${this.haulDemand}, haulers required ${this.haulersRequired}, upgraders required ${this.upgradersRequired}`, Debug.averages);
+        }
+    }
+
+    private actionHostiles(): void {
+
+        this.updateHostiles();
+
+        const hostiles = Object.values(this.hostiles);
+
+        if (hostiles && hostiles.length > 0) {
+            // Decide how many defenders we require
+            log.debug(`${hostiles.length} hostiles detected in ${this.roomName}`, Debug.hostiles);
+        }
+    }
+
+
     private updateHostiles(): void {
         const targets = Game.rooms[this.roomName].find(FIND_HOSTILE_CREEPS);
 
+        // Tidy up the existing array of hostiles
+        for (const h in this.hostiles) {
+            const hostile = Game.getObjectById(this.hostiles[h].id);
+
+            if (!hostile) {
+                delete this.hostiles[h];
+            }
+
+        }
+
         // Store current hostile creeps
         for (const t of targets) {
-            this.hostiles[t.id] = new MyHostileCreep(t);
+            if (!this.hostiles[t.id]) {
+                this.hostiles[t.id] = new MyHostileCreep(t);
+            }
         }
     }
 
@@ -151,21 +213,30 @@ export class MyRoom {
             count++;
         }
 
-        placeText(`Sources:    ${Object.keys(gameState.rooms[this.roomName].sources).length}`);
-        placeText(`Creeps:    ${count}`);
-        placeText(' ');
-
-        for (const r in census) {
-            placeText(`${r} - ${census[r]}`);
+        if (Visuals.sources) {
+            placeText(`Sources:    ${Object.keys(gameState.rooms[this.roomName].sources).length}`);
         }
 
-        placeText(' ');
-        placeText(`Capacity   ${room.energyCapacityAvailable}`);
-        placeText(`Available  ${room.energyAvailable}`);
-        placeText(' ');
-        placeText(`Dropped     ${this.totalDroppedEnergy()}`);
-        placeText(`Containers  ${this.totalContainerEnergy()}`);
+        if (Visuals.creeps) {
+            placeText(`Creeps:    ${count}`);
+            placeText(' ');
 
+            for (const r in census) {
+                placeText(`${r} - ${census[r]}`);
+            }
+        }
+
+        if (Visuals.energy) {
+            placeText(' ');
+            placeText(`Capacity   ${room.energyCapacityAvailable}`);
+            placeText(`Available  ${room.energyAvailable}`);
+        }
+
+        if (Visuals.resources) {
+            placeText(' ');
+            placeText(`Dropped     ${this.totalDroppedEnergy()}`);
+            placeText(`Containers  ${this.totalContainerEnergy()}`);
+        }
 
         return;
 
@@ -318,10 +389,11 @@ export class MyRoom {
 
     private totalDroppedEnergy(): number {
         let totalResource: number = 0;
-
-        for (const r of Game.rooms[this.roomName].droppedResource) {
-            if (r.resourceType === RESOURCE_ENERGY) {
-                totalResource += r.amount
+        if (Game.rooms[this.roomName]) {
+            for (const r of Game.rooms[this.roomName].droppedResource) {
+                if (r && r.resourceType === RESOURCE_ENERGY) {
+                    totalResource += r.amount
+                }
             }
         }
 
@@ -334,9 +406,13 @@ export class MyRoom {
 
         log.debug(`Container count - ${Object.values(this.containers).length}`, Debug.containers)
 
-        for (const c of Object.values(this.containers)) {
-            const container = Game.getObjectById(c.id) as StructureContainer;
-            totalResource += container.store.energy;
+        if (Game.rooms[this.roomName]) {
+            for (const c of Object.values(this.containers)) {
+                const container = Game.getObjectById(c.id) as StructureContainer;
+                if (container) {
+                    totalResource += container.store.energy;
+                }
+            }
         }
 
         return totalResource;

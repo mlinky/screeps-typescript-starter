@@ -69,10 +69,10 @@ export class CreepUpgrader extends MyCreep {
                     return 0;
                 }
                 case 2: {
-                    return (Game.rooms[cluster.clusterName].energyCapacityAvailable < 400 ? 0 : 2);
+                    return (Game.rooms[cluster.clusterName].energyCapacityAvailable < 400 ? 0 : gameState.rooms[cluster.clusterName].upgradersRequired);
                 }
                 case 3: {
-                    return 2;
+                    return gameState.rooms[cluster.clusterName].upgradersRequired;
                 }
                 default: {
                     if (!Game.rooms[cluster.clusterName]) {

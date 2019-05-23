@@ -42,7 +42,7 @@ export class MyController extends MyDefault {
                     case LOOK_STRUCTURES: {
                         // Have we found the container?
                         if (l.structure && l.structure.structureType === STRUCTURE_CONTAINER) {
-                            this.container = Game.getObjectById(l.structure.id) as StructureContainer;
+                            this.container = l.structure as StructureContainer;
                         }
 
                         break;

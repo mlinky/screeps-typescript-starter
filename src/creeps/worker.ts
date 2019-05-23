@@ -115,35 +115,40 @@ export class CreepWorker extends MyCreep {
                     return 2;
                 }
                 default: {
-                    if (!Game.rooms[cluster.clusterName]) {
-                        // No access to the room
-                        return 0;
-                    }
-
-                    if (!Game.rooms[cluster.clusterName].storage) {
-                        // Room has no storage yet - spawn one worker
+                    if (Object.keys(gameState.rooms[cluster.clusterName].constructionSites).length > 0) {
+                        return 4;
+                    } else {
                         return 2;
                     }
+                    // if (!Game.rooms[cluster.clusterName]) {
+                    //     // No access to the room
+                    //     return 0;
+                    // }
 
-                    if (Game.rooms[cluster.clusterName].storage!.store.energy < 100000) {
-                        // Not much storage - only one worker
-                        return 2;
-                    }
+                    // if (!Game.rooms[cluster.clusterName].storage) {
+                    //     // Room has no storage yet - spawn one worker
+                    //     return 2;
+                    // }
 
-                    if (Game.rooms[cluster.clusterName].storage!.store.energy < 400000) {
-                        // Medium storage - two workers
-                        return 2;
-                    }
+                    // if (Game.rooms[cluster.clusterName].storage!.store.energy < 100000) {
+                    //     // Not much storage - only one worker
+                    //     return 2;
+                    // }
 
-                    if (Game.rooms[cluster.clusterName].storage!.store.energy < 800000) {
-                        // High storage - three workers
-                        return 3;
-                    }
+                    // if (Game.rooms[cluster.clusterName].storage!.store.energy < 400000) {
+                    //     // Medium storage - two workers
+                    //     return 2;
+                    // }
 
-                    if (Game.rooms[cluster.clusterName].storage!.store.energy > 800000) {
-                        // Surplus storage - three workers
-                        return 3;
-                    }
+                    // if (Game.rooms[cluster.clusterName].storage!.store.energy < 800000) {
+                    //     // High storage - three workers
+                    //     return 3;
+                    // }
+
+                    // if (Game.rooms[cluster.clusterName].storage!.store.energy > 800000) {
+                    //     // Surplus storage - three workers
+                    //     return 3;
+                    // }
 
                 }
             }

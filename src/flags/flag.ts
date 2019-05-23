@@ -104,7 +104,7 @@ export abstract class Flags {
             // Remotes require claimer, miners, haulers and sometimes workers
             // Order another claimer if the reservation is low
             if (room.controller && room.controller.reservation && room.controller.reservation.ticksToEnd < 1000) {
-                this.checkAndRequest(Roles.reserver, f.room, cluster, (room.energyCapacityAvailable < 1300 ? 2 : 1), SpawnPriority.remote.reserve + (f.clusterIndex * SpawnPriority.remote.increment));
+                this.checkAndRequest(Roles.reserver, f.room, cluster, (Game.rooms[cluster.clusterName].energyCapacityAvailable < 1300 ? 2 : 1), SpawnPriority.remote.reserve + (f.clusterIndex * SpawnPriority.remote.increment));
             }
 
             // Order a miner per source
@@ -114,7 +114,7 @@ export abstract class Flags {
 
             // Order a hauler per source
             if (checkRefresh(_REFRESH.transporter)) {
-                this.checkAndRequest(Roles.transporter, f.room, cluster, Object.keys(gameState.rooms[f.room].sources).length, SpawnPriority.remote.transport + (f.clusterIndex * SpawnPriority.remote.increment));
+                this.checkAndRequest(Roles.transporter, f.room, cluster, gameState.rooms[f.room].haulersRequired, SpawnPriority.remote.transport + (f.clusterIndex * SpawnPriority.remote.increment));
             }
 
             // Order one worker, if there is work to do

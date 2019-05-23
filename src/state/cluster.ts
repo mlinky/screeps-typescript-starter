@@ -10,6 +10,7 @@ import { gameState } from "defs";
 import { log } from "log/log";
 import { profile } from "profiler/decorator";
 import { Debug } from "settings";
+import { ManagerPos } from "utils/managerPos";
 import { SpawnPriority } from "utils/priorities";
 import { _REFRESH, checkRefresh } from "utils/refresh";
 import { RoomPlanner } from "utils/roomPlanner";
@@ -60,7 +61,13 @@ export class MyCluster {
     public remotes: number = 0;
     public hasSpawns: boolean = false;
     public canSpawn: boolean = false;
+    public spawnTick: number = 0;
     public tasks: { [digest: string]: Task } = {};
+
+    public managerAvailable: { [managerID: string]: boolean } = {}
+    public managerPaths: { [managerID: string]: ManagerPos[] } = {};
+
+    public hasManager: boolean = false;
 
     public initialised: boolean = false;
 
@@ -97,14 +104,67 @@ export class MyCluster {
             gameState.rooms[r.roomName].initRoom()
         }
 
+        // Build manager paths
+        this.updateManagerPaths();
+
         this.initialised = true;
 
         return;
 
     };
 
+
+
     //#region update_code
+
     // Update object details
+    public updateManagerPaths() {
+        const cluster: MyCluster = this;
+        const room: Room = Game.rooms[cluster.clusterName];
+
+        if (gameState.rooms[this.clusterName].controller) {
+            switch (gameState.rooms[this.clusterName].controller!.level()) {
+                case 1:
+                case 2:
+                case 3:
+                    return;
+                case 4: {
+                    buildTLPath();
+                }
+            }
+        }
+        return;
+
+        function buildTLPath() {
+            const managerID: string = 'TL';
+            cluster.managerPaths[managerID] = [];
+
+            log.debug(`Building ${managerID} path for ${room.name}`, Debug.manager);
+
+            addPathItem(cluster.managerPaths[managerID], 1, -1);
+            addPathItem(cluster.managerPaths[managerID], 0, -1);
+            addPathItem(cluster.managerPaths[managerID], -1, 0);
+            addPathItem(cluster.managerPaths[managerID], -2, -1);
+            addPathItem(cluster.managerPaths[managerID], -3, -2);
+            addPathItem(cluster.managerPaths[managerID], -3, -3);
+            addPathItem(cluster.managerPaths[managerID], -2, -4);
+            addPathItem(cluster.managerPaths[managerID], -1, -5);
+            addPathItem(cluster.managerPaths[managerID], 0, -5);
+            addPathItem(cluster.managerPaths[managerID], 1, -4);
+            addPathItem(cluster.managerPaths[managerID], 2, -3);
+            addPathItem(cluster.managerPaths[managerID], 1, -2);
+            addPathItem(cluster.managerPaths[managerID], 1, -1);
+
+            log.debug(`TL path has ${cluster.managerPaths[managerID].length} steps for room ${room.name}`, Debug.manager);
+
+
+        }
+
+        function addPathItem(arr: ManagerPos[], relX: number, relY: number) {
+            arr.push(new ManagerPos(cluster.origin!.x + relX, cluster.origin!.y + relY, room));
+        }
+    }
+
     public updateExtensions() {
         const structures = Game.rooms[this.clusterName].find(FIND_MY_STRUCTURES, {
             filter: { structureType: STRUCTURE_EXTENSION }
@@ -298,10 +358,25 @@ export class MyCluster {
 
         // Managers
         if (checkRefresh(_REFRESH.manager)) {
-            // this.checkAndRequest(Roles.manager, this.clusterName, CreepManager.required(this), SpawnPriority.base.manager);
+            this.checkAndRequest(Roles.manager, this.clusterName, CreepManager.required(this), SpawnPriority.base.manager);
         }
 
+        this.checkManagers();
+
         return;
+
+    }
+
+    // Check managers
+    private checkManagers() {
+        const creeps = _.filter(gameState.creeps, c => c.role === Roles.manager && c.workRoom === this.clusterName && c.homeRoom === this.clusterName) as CreepManager[];
+
+        this.managerAvailable = {}
+
+        for (const creep of creeps) {
+            this.managerAvailable[creep.managerID] = true;
+            this.hasManager = true;
+        }
 
     }
 
@@ -399,6 +474,9 @@ export class MyCluster {
 
                     // Remove request array element
                     cluster.creepRequests.splice(minIndex, 1);
+
+                    // Update spawn tick
+                    cluster.spawnTick = Game.time;
 
                 }
 
